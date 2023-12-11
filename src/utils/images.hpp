@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <unistd.h> // added
 
 template <typename ComponentType>
 void flipImageYAxis(
