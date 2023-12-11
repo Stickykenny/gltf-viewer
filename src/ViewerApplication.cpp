@@ -58,6 +58,7 @@ int ViewerApplication::run() {
     }
 
     // TODO Creation of Buffer Objects
+    auto bufferObjects = ViewerApplication::createBufferObjects(model);
 
     // TODO Creation of Vertex Array Objects
 

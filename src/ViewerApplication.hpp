@@ -39,6 +39,32 @@ class ViewerApplication {
         return ret;
     };
 
+    std::vector<GLuint> createBufferObjects(const tinygltf::Model &model) {
+        int bufferIdx = 0;
+        std::vector<GLuint> v1(model.buffers.size());
+        glGenBuffers(v1.size(), v1.data());
+
+        for (auto it = v1.begin(); it != v1.end(); ++it) {
+            glBindBuffer(GL_ARRAY_BUFFER, *(it));
+            glBufferStorage(GL_ARRAY_BUFFER, sizeof(GLuint),
+                            model.buffers[bufferIdx].data.data(),
+                            GL_DYNAMIC_STORAGE_BIT);
+
+            bufferIdx++;
+        }
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        return v1;
+        // Create a vector of GLuint with the correct size
+        // (model.buffers.size()) and use glGenBuffers to create buffer objects.
+        // - In a loop, fill each buffer object with the data using glBindBuffer
+        // and glBufferStorage. The data should be obtained from
+        // model.buffers[bufferIdx].data. - Don't forget to unbind the buffer
+        // object from GL_ARRAY_BUFFER after the loop
+        // that compute the vector of buffer objects from a model and returns
+        // it. Call this functions in run() after loading the glTF.
+    };
+
     int run();
 
    private:
