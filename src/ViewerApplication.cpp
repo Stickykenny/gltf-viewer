@@ -61,6 +61,8 @@ int ViewerApplication::run() {
     auto bufferObjects = ViewerApplication::createBufferObjects(model);
 
     // TODO Creation of Vertex Array Objects
+    std::vector<VaoRange> meshToVertexArrays;
+    const auto VAO = ViewerApplication::createVertexArrayObjects(model, bufferObjects, meshToVertexArrays);
 
     // Setup OpenGL state for rendering
     glEnable(GL_DEPTH_TEST);
