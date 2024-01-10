@@ -1,13 +1,7 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 cmake_policy(SET CMP0048 NEW)
 
 project(gltf-viewer VERSION 0.0.1)
-
-if(CMAKE_COMPILER_IS_GNUCXX)
-    add_definitions(
-        -std=c++14
-    )
-endif()
 
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
@@ -16,8 +10,6 @@ endif()
 message(STATUS "Preparing solution with CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-option(GLTF_VIEWER_USE_BOOST_FILESYSTEM "Use boost for filesystem library instead of experimental std lib" OFF)
 
 set(IMGUI_DIR imgui-1.74)
 set(GLFW_DIR glfw-3.3.1)
@@ -37,11 +29,8 @@ if(${CMAKE_VERSION} VERSION_LESS "3.10.0")
 else()
     set(OpenGL_GL_PREFERENCE GLVND)
 endif()
-find_package(OpenGL REQUIRED)
 
-if(GLTF_VIEWER_USE_BOOST_FILESYSTEM)
-    find_package(Boost COMPONENTS system filesystem REQUIRED)
-endif()
+find_package(OpenGL REQUIRED)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -83,27 +72,6 @@ set(
     glfw
 )
 
-set(CXXFLAGS ${CXXFLAGS} std=c++14)
-if (GLTF_VIEWER_USE_BOOST_FILESYSTEM)
-    set(LIBRARIES ${LIBRARIES} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
-else()
-    if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        set(CXXFLAGS ${CXXFLAGS} std=c++17)
-        set(LIBRARIES ${LIBRARIES} stdc++fs)
-        if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "8.0.0")
-            set(USE_STD_FILESYSTEM 1)
-        endif()
-
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "[Cc]lang")
-        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0.0")
-            set(LIBRARIES ${LIBRARIES} stdc++fs)
-        else()
-            set(CXXFLAGS ${CXXFLAGS} std=c++17)
-            set(USE_STD_FILESYSTEM 1)
-        endif()
-    endif()
-endif()
-
 source_group("glsl" REGULAR_EXPRESSION ".*/*.glsl")
 source_group("third-party" REGULAR_EXPRESSION "third-party/*.*")
 
@@ -121,19 +89,6 @@ add_executable(
     ${SRC_FILES}
     ${THIRD_PARTY_SRC_FILES}
 )
-
-if(GLTF_VIEWER_USE_BOOST_FILESYSTEM)
-    target_include_directories (
-        ${APP}
-        PUBLIC
-        ${Boost_INCLUDE_DIRS}
-    )
-    target_compile_definitions(
-        ${APP}
-        PUBLIC
-        GLTF_VIEWER_USE_BOOST_FILESYSTEM
-    )
-endif()
 
 target_include_directories(
     ${APP}
@@ -156,11 +111,7 @@ target_compile_definitions(
     GLM_ENABLE_EXPERIMENTAL
 )
 
-if(${CMAKE_VERSION} VERSION_LESS "3.8.0")
-    set_property(TARGET ${APP} PROPERTY CXX_STANDARD 14)
-else()
-    set_property(TARGET ${APP} PROPERTY CXX_STANDARD 17)
-endif()
+set_property(TARGET ${APP} PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(
     ${APP}
