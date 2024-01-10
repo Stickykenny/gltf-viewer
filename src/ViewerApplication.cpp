@@ -11,6 +11,7 @@
 #include <numeric>
 
 #include "utils/cameras.hpp"
+#include "utils/images.hpp"
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action,
                  int mods) {
@@ -136,6 +137,30 @@ int ViewerApplication::run() {
         }
     };
 
+    // --output functionnality
+
+    // Please change argument in .vscode/bash-init.sh, view_sponza
+    std::cout << m_OutputPath.string() << std::endl;
+    if (!m_OutputPath.empty()) {
+        std::cout << "we're in babyyy, let'ss goooo" << std::endl;
+        // TODO
+        std::vector<unsigned char> pixels(m_nWindowHeight * m_nWindowWidth * 3);
+
+        renderToImage(m_nWindowWidth, m_nWindowHeight, 3, pixels.data(), [&]() {
+            drawScene(cameraController.getCamera());
+        });
+
+        //: flip the image vertically, because OpenGL does not use the same convention for that than png files, and write the png file with stb_image_write library which is included in the third-parties.
+        flipImageYAxis(m_nWindowWidth, m_nWindowHeight, 3, pixels.data());
+
+        // output the png
+        const auto strPath = m_OutputPath.string();
+        stbi_write_png(
+            strPath.c_str(), m_nWindowWidth, m_nWindowHeight, 3, pixels.data(), 0);
+
+        return 0;
+    }
+
     // Loop until the user closes the window
     for (auto iterationCount = 0u; !m_GLFWHandle.shouldClose();
          ++iterationCount) {
@@ -224,7 +249,6 @@ ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width,
     if (!vertexShader.empty()) {
         m_vertexShader = vertexShader;
     }
-
     if (!fragmentShader.empty()) {
         m_fragmentShader = fragmentShader;
     }
