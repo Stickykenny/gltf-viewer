@@ -84,16 +84,15 @@ class ViewerApplication {
 
     std::vector<GLuint> createBufferObjects(const tinygltf::Model &model) {
         // converting glTF buffers to OpenGL buffer objects
-        int bufferIdx = 0;
+
         std::vector<GLuint> v1(model.buffers.size());
-        glGenBuffers(v1.size(), v1.data());
+        glGenBuffers(GLsizei(model.buffers.size()), v1.data());
 
-        for (auto it = v1.begin(); it != v1.end(); ++it) {
-            glBindBuffer(GL_ARRAY_BUFFER, *(it));
-            glBufferStorage(GL_ARRAY_BUFFER, sizeof(GLuint),
-                            model.buffers[bufferIdx].data.data(), 0);
-
-            bufferIdx++;
+        glGenBuffers(GLsizei(model.buffers.size()), v1.data());
+        for (size_t i = 0; i < model.buffers.size(); ++i) {
+            glBindBuffer(GL_ARRAY_BUFFER, v1[i]);
+            glBufferStorage(GL_ARRAY_BUFFER, model.buffers[i].data.size(),
+                            model.buffers[i].data.data(), 0);
         }
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -109,7 +108,11 @@ class ViewerApplication {
     std::vector<GLuint> createVertexArrayObjects(const tinygltf::Model &model, const std::vector<GLuint> &bufferObjects, std::vector<VaoRange> &meshIndexToVaoRange) {
         // take the model and the buffer objects we previously created, create an array of vertex array objects and return it.
         std::vector<GLuint> vertexArrayObjects;  // contain our vertex array objects
-        //
+                                                 //
+
+        // For each mesh of model we keep its range of VAOs
+        meshIndexToVaoRange.resize(model.meshes.size());
+
         GLuint VERTEX_ATTRIB_POSITION_IDX = 0;
         GLuint VERTEX_ATTRIB_NORMAL_IDX = 1;
         GLuint VERTEX_ATTRIB_TEXCOORD0_IDX = 2;
