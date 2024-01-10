@@ -7,13 +7,20 @@ This is the code repository for https://gltf-viewer-tutorial.gitlab.io/.
 ### TLDR
 
 ```bash
-.vscode/bash-init.sh # once per session
+source .vscode/bash-init.sh # once per session
 cmake_build
 view_sponza or view_helmet
 ```
 
 Can also use
 `cmake ../ ; make`
+
+### My git setup
+
+commit and push to gitlab
+
+then
+`git push togithub`
 
 #### Copy-pasted from https://gltf-viewer-tutorial.gitlab.io/roadmap/
 

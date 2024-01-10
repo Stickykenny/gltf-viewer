@@ -5,6 +5,7 @@
 #include "utils/GLFWHandle.hpp"
 #include "utils/cameras.hpp"
 #include "utils/filesystem.hpp"
+#include "utils/gltf.hpp"
 #include "utils/shaders.hpp"
 class ViewerApplication {
    private:
@@ -158,13 +159,6 @@ class ViewerApplication {
                         // The stride is obtained in the bufferView, normalized is always GL_FALSE, and pointer is the byteOffset (don't forget the cast).
 
                         if (primitive.indices >= 0) {
-                            // If that's the case then you need to get the accessor of index primitive.indices, its buffer view, and call glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, /* TODO fill with the correct buffer object */)
-                            const auto accessorIdx = (*iterator).second;
-                            const auto &accessor = model.accessors[accessorIdx];            // TODO get the correct tinygltf::Accessor from model.accessors
-                            const auto &bufferView = model.bufferViews[primitive.indices];  // TODO get the correct tinygltf::BufferView from model.bufferViews. You need to use the accessor
-                            const auto bufferIdx = bufferView.buffer;                       // TODO get the index of the buffer used by the bufferView (you need to use it)
-
-                            const auto bufferObject = bufferObjects[bufferIdx];
                             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferObject);
                         }
                     }
