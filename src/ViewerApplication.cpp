@@ -35,6 +35,17 @@ int ViewerApplication::run() {
 
     // Build projection matrix
     auto maxDistance = 500.f;  // TODO use scene bounds instead to compute this
+
+    tinygltf::Model model;
+    if (!loadGltfFile(model)) {
+        return -1;
+    }
+
+    glm::vec3 bboxMin, bboxMax;
+    computeSceneBounds(model, bboxMin, bboxMax);
+    const auto diag = bboxMax - bboxMin;
+    maxDistance = glm::length(diag);  // TODO use scene bounds instead to compute this
+
     maxDistance = maxDistance > 0.f ? maxDistance : 100.f;
     const auto projMatrix =
         glm::perspective(70.f, float(m_nWindowWidth) / m_nWindowHeight,
@@ -42,20 +53,26 @@ int ViewerApplication::run() {
 
     // TODO Implement a new CameraController model and use it instead. Propose
     // the choice from the GUI
+    // FirstPersonCameraController cameraController{m_GLFWHandle.window(), 0.5f * maxDistance};
+
+    // Lower speed to 1/5
     FirstPersonCameraController cameraController{m_GLFWHandle.window(),
-                                                 0.5f * maxDistance};
+                                                 0.1f * maxDistance};
+
+    // Replace the default camera with a camera such that center is the center of the bounding box, eye is computed as center + diagonal vector, and up is (0, 1, 0). (ideally the up vector should be specified with the file, on the command line for example, because some 3d modelers use the convention up = (0, 0, 1)).
+
     if (m_hasUserCamera) {
         cameraController.setCamera(m_userCamera);
     } else {
         // TODO Use scene bounds to compute a better default camera
-        cameraController.setCamera(Camera{
-            glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0)});
-    }
+        // cameraController.setCamera(Camera{glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0)});
 
-    tinygltf::Model model;
-    // TODO Loading the glTF file
-    if (!ViewerApplication::loadGltfFile(model)) {
-        return -1;
+        //  Camera(glm::vec3 e, glm::vec3 c, glm::vec3 u) : m_eye(e), m_center(c), m_up(u)
+
+        const auto up = glm::vec3(0, 1, 0);
+        const auto center = ((bboxMax + bboxMin) * 0.5f);
+        const auto eye = diag.z > 0 ? center + diag : center + 2.f * glm::cross(diag, up);
+        cameraController.setCamera(Camera{eye, center, up});
     }
 
     // TODO Creation of Buffer Objects
@@ -142,7 +159,6 @@ int ViewerApplication::run() {
     // Please change argument in .vscode/bash-init.sh, view_sponza
     std::cout << m_OutputPath.string() << std::endl;
     if (!m_OutputPath.empty()) {
-        std::cout << "we're in babyyy, let'ss goooo" << std::endl;
         // TODO
         std::vector<unsigned char> pixels(m_nWindowHeight * m_nWindowWidth * 3);
 
