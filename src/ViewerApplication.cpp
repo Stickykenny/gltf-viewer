@@ -58,11 +58,11 @@ int ViewerApplication::run() {
     }
 
     // TODO Creation of Buffer Objects
-    auto bufferObjects = ViewerApplication::createBufferObjects(model);
+    const auto bufferObjects = ViewerApplication::createBufferObjects(model);
 
     // TODO Creation of Vertex Array Objects
     std::vector<VaoRange> meshToVertexArrays;
-    const auto VAO = ViewerApplication::createVertexArrayObjects(model, bufferObjects, meshToVertexArrays);
+    const auto VertexArrayObjects = ViewerApplication::createVertexArrayObjects(model, bufferObjects, meshToVertexArrays);
 
     // Setup OpenGL state for rendering
     glEnable(GL_DEPTH_TEST);
@@ -82,27 +82,48 @@ int ViewerApplication::run() {
                 // TODO The drawNode function
                 auto node = model.nodes[nodeIdx];
                 glm::mat4 modelMatrix = getLocalToWorldMatrix(node, parentMatrix);
-                glm::mat4 modelViewMatrix;
-                glm::mat4 modelViewProjectionMatrix;
-                glm::mat4 normalMatrix;
                 if (node.mesh >= 0) {
                     // Compute modelViewMatrix, modelViewProjectionMatrix, normalMatrix and send all of these to the shaders with glUniformMatrix4fv.
-                    modelViewMatrix = viewMatrix * modelMatrix;
-                    modelViewProjectionMatrix = projMatrix * modelViewMatrix;
-                    normalMatrix = transpose(inverse(modelViewMatrix));
+                    const auto modelViewMatrix = viewMatrix * modelMatrix;
+                    const auto modelViewProjectionMatrix = projMatrix * modelViewMatrix;
+                    const auto normalMatrix = transpose(inverse(modelViewMatrix));
 
-                    glUniformMatrix4fv(modelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelViewMatrix));
                     glUniformMatrix4fv(modelViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelViewProjectionMatrix));
+                    glUniformMatrix4fv(modelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelViewMatrix));
                     glUniformMatrix4fv(normalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
 
                     // Get the mesh and the vertex array objects range of the current mesh.
 
-                    auto current_mesh = model.meshes[node.mesh];
-                    for (int i = 0; i < current_mesh.primitives.size(); i++) {
-                        auto primitive = current_mesh.primitives[i];
-                    }
+                    const auto &current_mesh = model.meshes[node.mesh];
+                    const auto &vaoRange = meshToVertexArrays[node.mesh];
 
-                    // VAO[vaoRange.begin + primIdx];
+                    for (size_t i = 0; i < current_mesh.primitives.size(); i++) {
+                        const auto &primitive = current_mesh.primitives[i];
+                        const auto vao = VertexArrayObjects[vaoRange.begin + i];
+
+                        glBindVertexArray(vao);
+
+                        if (primitive.indices >= 0) {
+                            const auto &accessor = model.accessors[primitive.indices];
+
+                            const auto &bufferView = model.bufferViews[accessor.bufferView];
+                            const auto byteOffset =
+                                accessor.byteOffset + bufferView.byteOffset;
+
+                            // glDrawElements(mode, count, type, indices)
+                            glDrawElements(primitive.mode, GLsizei(accessor.count), accessor.componentType, (const GLvoid *)byteOffset);
+
+                        } else {
+                            const auto accessorIdx = (*begin(primitive.attributes)).second;
+                            const auto &accessor = model.accessors[accessorIdx];
+
+                            glDrawArrays(primitive.mode, 0, GLsizei(accessor.count));
+                        }
+                    }
+                }
+                // Draw the children recursively
+                for (const auto child : node.children) {
+                    drawNode(child, modelMatrix);
                 }
             };
 
