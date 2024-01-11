@@ -58,12 +58,14 @@ int ViewerApplication::run() {
     // Lower speed to 1/5
     // FirstPersonCameraController cameraController{m_GLFWHandle.window(), 0.1f * maxDistance};
 
-    TrackballCameraController cameraController{m_GLFWHandle.window(), 0.1f * maxDistance};
+    // TrackballCameraController cameraController{m_GLFWHandle.window(), 0.1f * maxDistance};
+    std::unique_ptr<CameraController> cameraController = std::make_unique<TrackballCameraController>(m_GLFWHandle.window(), 0.1f * maxDistance);
+    ;
 
     // Replace the default camera with a camera such that center is the center of the bounding box, eye is computed as center + diagonal vector, and up is (0, 1, 0). (ideally the up vector should be specified with the file, on the command line for example, because some 3d modelers use the convention up = (0, 0, 1)).
 
     if (m_hasUserCamera) {
-        cameraController.setCamera(m_userCamera);
+        cameraController->setCamera(m_userCamera);
     } else {
         // TODO Use scene bounds to compute a better default camera
         // cameraController.setCamera(Camera{glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0)});
@@ -73,7 +75,7 @@ int ViewerApplication::run() {
         const auto up = glm::vec3(0, 1, 0);
         const auto center = ((bboxMax + bboxMin) * 0.5f);
         const auto eye = diag.z > 0 ? center + diag : center + 2.f * glm::cross(diag, up);
-        cameraController.setCamera(Camera{eye, center, up});
+        cameraController->setCamera(Camera{eye, center, up});
     }
 
     // TODO Creation of Buffer Objects
@@ -164,7 +166,7 @@ int ViewerApplication::run() {
         std::vector<unsigned char> pixels(m_nWindowHeight * m_nWindowWidth * 3);
 
         renderToImage(m_nWindowWidth, m_nWindowHeight, 3, pixels.data(), [&]() {
-            drawScene(cameraController.getCamera());
+            drawScene(cameraController->getCamera());
         });
 
         //: flip the image vertically, because OpenGL does not use the same convention for that than png files, and write the png file with stb_image_write library which is included in the third-parties.
@@ -183,7 +185,7 @@ int ViewerApplication::run() {
          ++iterationCount) {
         const auto seconds = glfwGetTime();
 
-        const auto camera = cameraController.getCamera();
+        const auto camera = cameraController->getCamera();
         drawScene(camera);
 
         // GUI code:
@@ -194,6 +196,19 @@ int ViewerApplication::run() {
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                         1000.0f / ImGui::GetIO().Framerate,
                         ImGui::GetIO().Framerate);
+            static int e = 1;
+            if (
+                ImGui::RadioButton("First Person", &e, 0) ||
+                ImGui::RadioButton("Trackball", &e, 1)) {
+                const auto currentCamera = cameraController->getCamera();
+                if (e == 1) {
+                    cameraController = std::make_unique<TrackballCameraController>(m_GLFWHandle.window(), 0.1f * maxDistance);
+                } else {
+                    cameraController = std::make_unique<FirstPersonCameraController>(m_GLFWHandle.window(), 0.1f * maxDistance);
+                }
+                cameraController->setCamera(currentCamera);
+            }
+
             if (ImGui::CollapsingHeader("Camera",
                                         ImGuiTreeNodeFlags_DefaultOpen)) {
                 ImGui::Text("eye: %.3f %.3f %.3f", camera.eye().x,
@@ -219,6 +234,8 @@ int ViewerApplication::run() {
                     glfwSetClipboardString(m_GLFWHandle.window(), str.c_str());
                 }
             }
+            if (e == 1) {
+            }
             ImGui::End();
         }
 
@@ -230,7 +247,7 @@ int ViewerApplication::run() {
         auto guiHasFocus = ImGui::GetIO().WantCaptureMouse ||
                            ImGui::GetIO().WantCaptureKeyboard;
         if (!guiHasFocus) {
-            cameraController.update(float(ellapsedTime));
+            cameraController->update(float(ellapsedTime));
         }
 
         m_GLFWHandle.swapBuffers();  // Swap front and back buffers
