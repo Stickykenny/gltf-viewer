@@ -33,6 +33,13 @@ int ViewerApplication::run() {
     const auto normalMatrixLocation =
         glGetUniformLocation(glslProgram.glId(), "uNormalMatrix");
 
+    const auto uLightDirectionLocation =
+        glGetUniformLocation(glslProgram.glId(), "uLightDirection");
+    const auto uLightIntensityLocation =
+        glGetUniformLocation(glslProgram.glId(), "uLightIntensity");
+    glm::vec3 lightDirection(1);
+    glm::vec3 lightIntensity(1);
+
     // Build projection matrix
     auto maxDistance = 500.f;  // TODO use scene bounds instead to compute this
 
@@ -95,6 +102,17 @@ int ViewerApplication::run() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         const auto viewMatrix = camera.getViewMatrix();
+
+        if (uLightDirectionLocation >= 0) {
+            // Pass value if location not null
+            const auto lightDirectionInViewSpace =
+                glm::normalize(glm::vec3(viewMatrix * glm::vec4(lightDirection, 0.)));                                                       // Transform to viexMatrix then normalize it
+            glUniform3f(uLightDirectionLocation, lightDirectionInViewSpace[0], lightDirectionInViewSpace[1], lightDirectionInViewSpace[2]);  // Pass each value to fragment shader like that
+        }
+
+        if (uLightIntensityLocation >= 0) {
+            glUniform3f(uLightIntensityLocation, lightIntensity[0], lightIntensity[1], lightIntensity[2]);
+        }
 
         // The recursive function that should draw a node
         // We use a std::function because a simple lambda cannot be recursive
@@ -180,6 +198,7 @@ int ViewerApplication::run() {
         return 0;
     }
 
+    // RENDER LOOP
     // Loop until the user closes the window
     for (auto iterationCount = 0u; !m_GLFWHandle.shouldClose();
          ++iterationCount) {
