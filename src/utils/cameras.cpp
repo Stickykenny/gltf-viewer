@@ -107,4 +107,116 @@ bool FirstPersonCameraController::update(float elapsedTime)
   return true;
 }
 
-bool TrackballCameraController::update(float elapsedTime) { return false; }
+bool TrackballCameraController::update(float elapsedTime) {
+    if (glfwGetMouseButton(m_pWindow, GLFW_MOUSE_BUTTON_MIDDLE) &&
+        !m_MiddleButtonPressed) {
+        m_MiddleButtonPressed = true;
+        glfwGetCursorPos(
+            m_pWindow, &m_LastCursorPosition.x, &m_LastCursorPosition.y);
+    } else if (!glfwGetMouseButton(m_pWindow, GLFW_MOUSE_BUTTON_MIDDLE) &&
+               m_MiddleButtonPressed) {
+        m_MiddleButtonPressed = false;
+    }
+
+    const auto cursorDelta = ([&]() {
+        if (m_MiddleButtonPressed) {
+            dvec2 cursorPosition;
+            glfwGetCursorPos(m_pWindow, &cursorPosition.x, &cursorPosition.y);
+            const auto delta = cursorPosition - m_LastCursorPosition;
+            m_LastCursorPosition = cursorPosition;
+            return delta;
+        }
+        return dvec2(0);
+    })();
+
+    float truckLeft = 0.f;
+    float pedestalUp = 0.f;
+    float dollyIn = 0.f;
+    float rollRightAngle = 0.f;
+
+    // Rotate around center with middle mouse pressed
+    // Move on plane orthogonal to the view axis with shift+middle mouse pressed
+    // Dolly in/out with ctrl+middle mouse pressed
+    const auto hasMoved = 0.f;
+    if (m_MiddleButtonPressed) {
+        std::cout << "MIDDLE pressed";
+
+        if (glfwGetKey(m_pWindow, GLFW_KEY_LEFT_SHIFT)) {
+            std::cout << "+SHIFT" << std::endl;
+            // Truck
+            // Suit l'axe horizontal de la camera
+
+            const auto truckLeft = 0.01f * float(cursorDelta.x);
+            const auto pedestalUp = 0.01f * float(cursorDelta.y);
+
+            const auto hasMoved = truckLeft || pedestalUp;
+
+            m_camera.moveLocal(truckLeft, pedestalUp, 0);
+            if (hasMoved) {
+                return true;
+            }
+        }
+
+        else if (glfwGetKey(m_pWindow, GLFW_KEY_LEFT_ALT)) {
+            std::cout << "+ALT" << std::endl;
+            // Dolly - Zoom
+            // Suit l'axe z de la camera // profondeur-depth
+
+            // We cannot use moveLocal because it moves both the eye and the center.
+            // always keep eye != center (but you can ignore that initially and fix it later).
+
+            const float zoomOffset = -0.01f * float(cursorDelta.y);
+
+            auto viewVector = m_camera.center() - m_camera.eye();
+
+            // Cool looking fun
+            // viewVector.x = viewVector.x > 1 ? viewVector.x : 1;
+            const auto translation_vector = viewVector * zoomOffset;
+            const auto newEye = m_camera.eye() + translation_vector;
+
+            m_camera = Camera(newEye, m_camera.center(), m_worldUpAxis);
+            if (hasMoved) {
+                return true;
+            }
+        } else {
+            // Pan
+            // Rotation around camera # look around
+
+            // Not the implementation wanted, because it moves the center of the camera
+            const float longAngle = 0.01f * float(cursorDelta.y);
+            const float latitudeAngle = -0.01f * float(cursorDelta.x);
+
+            const auto hasMoved = longAngle || latitudeAngle;
+
+            /*m_camera.rotateLocal(0, yOffset, 0.f);
+            m_camera.rotateWorld(xOffset, m_worldUpAxis);*/
+
+            const auto depthAxis = m_camera.eye() - m_camera.center();
+            const auto horizontalAxis = m_camera.left();
+
+            const auto longitudeRotationMatrix = rotate(mat4(1), longAngle, horizontalAxis);
+            /*const auto latitudeRotationMatrix = rotate(mat4(1), latitudeAngle, m_worldUpAxis);
+
+            const auto rotationMatrix = glm::rotate(longitudeRotationMatrix, latitudeAngle, horizontalAxis);
+
+            const auto rotatedDepthAxis = longitudeRotationMatrix * vec4(depthAxis, 0);
+            const auto finalDepthAxis = vec3(latitudeRotationMatrix * rotatedDepthAxis);*/
+
+            // optimized version by pre-multiplying the two matrices before applying it to the depthAxis
+            const auto rotationMatrix = glm::rotate(longitudeRotationMatrix, latitudeAngle, m_worldUpAxis);
+
+            const auto rotatedDepthAxis = longitudeRotationMatrix * vec4(depthAxis, 0);
+            const auto finalDepthAxis = vec3(rotationMatrix * rotatedDepthAxis);
+
+            const auto newEye = m_camera.center() + finalDepthAxis;
+
+            m_camera = Camera(newEye, m_camera.center(), m_worldUpAxis);
+
+            std::cout << std::endl;
+            if (hasMoved) {
+                return true;
+            }
+        }
+    }
+    return false;
+}

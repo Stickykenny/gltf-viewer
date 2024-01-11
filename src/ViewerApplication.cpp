@@ -56,8 +56,9 @@ int ViewerApplication::run() {
     // FirstPersonCameraController cameraController{m_GLFWHandle.window(), 0.5f * maxDistance};
 
     // Lower speed to 1/5
-    FirstPersonCameraController cameraController{m_GLFWHandle.window(),
-                                                 0.1f * maxDistance};
+    // FirstPersonCameraController cameraController{m_GLFWHandle.window(), 0.1f * maxDistance};
+
+    TrackballCameraController cameraController{m_GLFWHandle.window(), 0.1f * maxDistance};
 
     // Replace the default camera with a camera such that center is the center of the bounding box, eye is computed as center + diagonal vector, and up is (0, 1, 0). (ideally the up vector should be specified with the file, on the command line for example, because some 3d modelers use the convention up = (0, 0, 1)).
 
