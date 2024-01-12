@@ -44,6 +44,8 @@ int ViewerApplication::run() {
 
     const auto uBaseColorTexture =
         glGetUniformLocation(glslProgram.glId(), "uBaseColorTexture");
+    const auto uBaseColorFactorLocation =
+        glGetUniformLocation(glslProgram.glId(), "uBaseColorFactor");
 
     const auto uLightDirectionLocation =
         glGetUniformLocation(glslProgram.glId(), "uLightDirection");
@@ -131,6 +133,13 @@ int ViewerApplication::run() {
         if (materialIndex >= 0) {
             const auto &material = model.materials[materialIndex];
             const auto &pbrMetallicRoughness = material.pbrMetallicRoughness;
+            if (uBaseColorFactorLocation >= 0) {
+                glUniform4f(uBaseColorFactorLocation,
+                            (float)pbrMetallicRoughness.baseColorFactor[0],
+                            (float)pbrMetallicRoughness.baseColorFactor[1],
+                            (float)pbrMetallicRoughness.baseColorFactor[2],
+                            (float)pbrMetallicRoughness.baseColorFactor[3]);
+            }
             if (uBaseColorTexture >= 0) {
                 auto textureObject = whiteTexture;
                 if (pbrMetallicRoughness.baseColorTexture.index >= 0) {
@@ -140,12 +149,16 @@ int ViewerApplication::run() {
                         textureObject = textureObjects[texture.source];
                     }
                 }
+              
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, textureObject);
                 glUniform1i(uBaseColorTexture, 0);
             }
         } else {
+            if (uBaseColorFactorLocation >= 0) {
+                glUniform4f(uBaseColorFactorLocation, 1, 1, 1, 1);
+            }
             if (uBaseColorTexture >= 0) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, whiteTexture);
@@ -304,13 +317,12 @@ int ViewerApplication::run() {
 
                 static bool autoIncrement = true;
                 static bool pressed = true;
-                static bool autoIncrement_colors = false;
-                static bool pressed_colors = false;
+                static bool autoIncrement_colors = true;
+                static bool pressed_colors = true;
                 // static else it reset every loop
 
                 if (autoIncrement) {
                     // increment phi and theta value each render loop
-                    std::cout << angle_delta[1] << std::endl;
                     theta = (theta + angle_delta[0]);
                     if (theta >= 6.28 || theta <= 0.f) {
                         angle_delta[0] = angle_delta[0] < 0 ? random_gen(intensity_delta_min, intensity_delta_max) : -random_gen(intensity_delta_min, intensity_delta_max);
