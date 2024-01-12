@@ -129,7 +129,7 @@ class ViewerApplication {
             const int vaoOffset = vertexArrayObjects.size();
             int size_before = vaoOffset;
             vertexArrayObjects.resize(vaoOffset + model.meshes[meshIdx].primitives.size());
-            auto vaoRange = VaoRange{vaoOffset, model.meshes[meshIdx].primitives.size()};
+            const auto &vaoRange = VaoRange{vaoOffset, GLsizei(model.meshes[meshIdx].primitives.size())};
             meshIndexToVaoRange.push_back(vaoRange);  // Will be used during rendering
 
             glGenVertexArrays(vaoRange.count, &vertexArrayObjects[vaoRange.begin]);

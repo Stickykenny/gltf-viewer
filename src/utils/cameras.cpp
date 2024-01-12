@@ -155,9 +155,9 @@ bool TrackballCameraController::update(float elapsedTime) {
             if (hasMoved) {
                 return true;
             }
-        }
-
-        else if (glfwGetKey(m_pWindow, GLFW_KEY_LEFT_ALT)) {
+        } else if (glfwGetKey(m_pWindow, GLFW_KEY_LEFT_CONTROL)) {
+            std::cout << "!!!! I'm using LEFT_ALT instead of LEFT_CONTROL for trackball due to laptop constraint" << std::endl;
+        } else if (glfwGetKey(m_pWindow, GLFW_KEY_LEFT_ALT)) {
             std::cout << "+ALT" << std::endl;
             // Dolly - Zoom
             // Suit l'axe z de la camera // profondeur-depth
