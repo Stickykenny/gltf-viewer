@@ -50,7 +50,7 @@ int ViewerApplication::run() {
     const auto uLightIntensityLocation =
         glGetUniformLocation(glslProgram.glId(), "uLightIntensity");
     glm::vec3 lightDirection(1);
-    glm::vec3 lightIntensity(1);
+    glm::vec3 lightIntensity({random_gen(0.f, 1.f), random_gen(0.f, 1.f), random_gen(0.f, 1.f)});
     bool lightFromCamera = false;
 
     // Build projection matrix
@@ -295,9 +295,12 @@ int ViewerApplication::run() {
                                         ImGuiTreeNodeFlags_DefaultOpen)) {
                 static float phi = 0;
                 static float theta = 0;
+                static float angle_delta[2] = {random_gen(0.f, .002f), random_gen(0.f, .002f)};
+
                 const int nb_channels = 3;
-                static float intensity[nb_channels] = {random_gen(0.f, 1.f), random_gen(0.f, 1.f), random_gen(0.f, 1.f)};
-                static float intensity_delta[nb_channels] = {random_gen(0.f, .0002f), random_gen(0.f, .0002f), random_gen(0.f, .0002f)};
+                static float intensity[nb_channels] = {lightIntensity[0], lightIntensity[1], lightIntensity[2]};
+                static float intensity_delta_min = 0.00075f, intensity_delta_max = .0002f;
+                static float intensity_delta[nb_channels] = {random_gen(intensity_delta_min, intensity_delta_max), random_gen(intensity_delta_min, intensity_delta_max), random_gen(intensity_delta_min, intensity_delta_max)};
 
                 static bool autoIncrement = true;
                 static bool pressed = true;
@@ -307,13 +310,14 @@ int ViewerApplication::run() {
 
                 if (autoIncrement) {
                     // increment phi and theta value each render loop
-                    theta = (theta + 0.001);
-                    if (theta >= 6.28) {
-                        theta = 0;
+                    std::cout << angle_delta[1] << std::endl;
+                    theta = (theta + angle_delta[0]);
+                    if (theta >= 6.28 || theta <= 0.f) {
+                        angle_delta[0] = angle_delta[0] < 0 ? random_gen(intensity_delta_min, intensity_delta_max) : -random_gen(intensity_delta_min, intensity_delta_max);
                     }
-                    phi = (phi + 0.001);
-                    if (phi >= 3.14) {
-                        phi = 0;
+                    phi = (phi + angle_delta[1]);
+                    if (phi >= 3.14 || phi <= 0.f) {
+                        angle_delta[1] = angle_delta[1] < 0 ? random_gen(intensity_delta_min, intensity_delta_max) : -random_gen(intensity_delta_min, intensity_delta_max);
                     }
                 }
 
