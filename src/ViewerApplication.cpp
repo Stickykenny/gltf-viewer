@@ -9,9 +9,18 @@
 #include <glm/gtx/io.hpp>
 #include <iostream>
 #include <numeric>
+#include <random>
 
 #include "utils/cameras.hpp"
 #include "utils/images.hpp"
+
+template <typename T>
+T random_gen(T range_from, T range_to) {
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev());
+    std::uniform_real_distribution<T> distr(range_from, range_to);
+    return distr(generator);
+}
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action,
                  int mods) {
@@ -59,11 +68,7 @@ int ViewerApplication::run() {
         glm::perspective(70.f, float(m_nWindowWidth) / m_nWindowHeight,
                          0.001f * maxDistance, 1.5f * maxDistance);
 
-    // TODO Implement a new CameraController model and use it instead. Propose
-    // the choice from the GUI
-    // FirstPersonCameraController cameraController{m_GLFWHandle.window(), 0.5f * maxDistance};
-
-    // Lower speed to 1/5
+    // TODO Implement a new CameraController model and use it instead. Propose the choice from the GUI
     // FirstPersonCameraController cameraController{m_GLFWHandle.window(), 0.1f * maxDistance};
 
     // TrackballCameraController cameraController{m_GLFWHandle.window(), 0.1f * maxDistance};
@@ -88,6 +93,24 @@ int ViewerApplication::run() {
         const auto eye = diag.z > 0 ? center + diag : center + 2.f * glm::cross(diag, up);
         cameraController->setCamera(Camera{eye, center, up});
     }
+
+    // ======= Textures =============
+    const auto textureObjects = createTextureObjects(model);
+
+    // White textures
+    GLuint whiteTexture = 0;
+    float white[] = {1, 1, 1, 1};
+    glGenTextures(1, &whiteTexture);
+    glBindTexture(GL_TEXTURE_2D, whiteTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_FLOAT, white);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // ======= END Textures =============
 
     // TODO Creation of Buffer Objects
     const auto bufferObjects = ViewerApplication::createBufferObjects(model);
@@ -240,7 +263,8 @@ int ViewerApplication::run() {
                                         ImGuiTreeNodeFlags_DefaultOpen)) {
                 static float phi = 0;
                 static float theta = 0;
-                static float intensity[3] = {1.0f, 1.0f, 1.0f};
+                static float intensity[3] = {1.f, 1.f, 1.f};
+
                 static bool autoIncrement = true;
                 static bool pressed = true;
                 // static else it reset every loop
@@ -325,6 +349,55 @@ int ViewerApplication::run() {
     // TODO clean up allocated GL data
 
     return 0;
+}
+
+std::vector<GLuint> ViewerApplication::createTextureObjects(const tinygltf::Model &model) const {
+    // Here we assume a texture object has been created and bound to GL_TEXTURE_2D
+
+    std::vector<GLuint> textureObjects(model.textures.size(), 0);
+
+    // Default Sampler
+    tinygltf::Sampler defaultSampler;
+    defaultSampler.minFilter = GL_LINEAR;
+    defaultSampler.magFilter = GL_LINEAR;
+    defaultSampler.wrapS = GL_REPEAT;
+    defaultSampler.wrapT = GL_REPEAT;
+    defaultSampler.wrapR = GL_REPEAT;
+
+    glActiveTexture(GL_TEXTURE0);
+    glGenTextures(GLsizei(model.textures.size()), textureObjects.data());
+
+    for (int i = 0; i < model.textures.size(); ++i) {
+        const auto &texture = model.textures[i];           // get i-th texture
+        assert(texture.source >= 0);                       // ensure a source image is present
+        const auto &image = model.images[texture.source];  // get the image
+
+        const auto &sampler =
+            texture.sampler >= 0 ? model.samplers[texture.sampler] : defaultSampler;
+        glBindTexture(GL_TEXTURE_2D, textureObjects[i]);
+        // fill the texture object with the data from the image
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, image.pixel_type, image.image.data());
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                        sampler.minFilter != -1 ? sampler.minFilter : GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                        sampler.magFilter != -1 ? sampler.magFilter : GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sampler.wrapS);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, sampler.wrapT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, sampler.wrapR);
+
+        // Some samplers use mipmapping for their minification filter. In that case, the specification tells us we need to have mipmaps computed for the texture. OpenGL can compute them for us:
+        if (sampler.minFilter == GL_NEAREST_MIPMAP_NEAREST ||
+            sampler.minFilter == GL_NEAREST_MIPMAP_LINEAR ||
+            sampler.minFilter == GL_LINEAR_MIPMAP_NEAREST ||
+            sampler.minFilter == GL_LINEAR_MIPMAP_LINEAR) {
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    return textureObjects;
 }
 
 ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width,

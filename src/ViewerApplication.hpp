@@ -174,5 +174,7 @@ class ViewerApplication {
         return vertexArrayObjects;
     }
 
+    std::vector<GLuint> createTextureObjects(const tinygltf::Model &model) const;
+
     int run();
 };
