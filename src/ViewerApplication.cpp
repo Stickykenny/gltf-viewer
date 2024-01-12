@@ -263,10 +263,14 @@ int ViewerApplication::run() {
                                         ImGuiTreeNodeFlags_DefaultOpen)) {
                 static float phi = 0;
                 static float theta = 0;
-                static float intensity[3] = {1.f, 1.f, 1.f};
+                const int nb_channels = 3;
+                static float intensity[nb_channels] = {random_gen(0.f, 1.f), random_gen(0.f, 1.f), random_gen(0.f, 1.f)};
+                static float intensity_delta[nb_channels] = {random_gen(0.f, .0002f), random_gen(0.f, .0002f), random_gen(0.f, .0002f)};
 
                 static bool autoIncrement = true;
                 static bool pressed = true;
+                static bool autoIncrement_colors = false;
+                static bool pressed_colors = false;
                 // static else it reset every loop
 
                 if (autoIncrement) {
@@ -281,6 +285,19 @@ int ViewerApplication::run() {
                     }
                 }
 
+                if (autoIncrement_colors) {
+                    // Make colors value change
+                    for (int i = 0; i < nb_channels; ++i) {
+                        intensity[i] += intensity_delta[i];
+                        if (intensity[i] >= 1.f || intensity[i] <= 0.f) {
+                            intensity_delta[i] = -intensity_delta[i];
+                        }
+                    }
+                    lightIntensity.x = intensity[0];
+                    lightIntensity.y = intensity[1];
+                    lightIntensity.z = intensity[2];
+                }
+
                 lightDirection = glm::vec3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
 
                 if (ImGui::SliderAngle("Phi", &phi, 0, 180) ||
@@ -292,6 +309,7 @@ int ViewerApplication::run() {
                     lightIntensity.y = intensity[1];
                     lightIntensity.z = intensity[2];
                 }
+
                 if (ImGui::Checkbox("Lighting from camera", &lightFromCamera)) {
                     glUniform3f(uLightDirectionLocation, 0, 0, 1);
                 }
@@ -300,6 +318,13 @@ int ViewerApplication::run() {
                         autoIncrement = false;
                     } else {
                         autoIncrement = true;
+                    }
+                }
+                if (ImGui::Checkbox("Auto-evolve colors", &pressed_colors)) {
+                    if (autoIncrement_colors) {
+                        autoIncrement_colors = false;
+                    } else {
+                        autoIncrement_colors = true;
                     }
                 }
             }
