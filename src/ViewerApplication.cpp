@@ -39,6 +39,7 @@ int ViewerApplication::run() {
         glGetUniformLocation(glslProgram.glId(), "uLightIntensity");
     glm::vec3 lightDirection(1);
     glm::vec3 lightIntensity(1);
+    bool lightFromCamera = false;
 
     // Build projection matrix
     auto maxDistance = 500.f;  // TODO use scene bounds instead to compute this
@@ -68,6 +69,9 @@ int ViewerApplication::run() {
     // TrackballCameraController cameraController{m_GLFWHandle.window(), 0.1f * maxDistance};
     std::unique_ptr<CameraController> cameraController = std::make_unique<TrackballCameraController>(m_GLFWHandle.window(), 0.1f * maxDistance);
     ;
+    std::cout << std::endl
+              << std::endl
+              << "!!!! I'm using LEFT_ALT instead of LEFT_CONTROL for trackball due to laptop constraint" << std::endl;
 
     // Replace the default camera with a camera such that center is the center of the bounding box, eye is computed as center + diagonal vector, and up is (0, 1, 0). (ideally the up vector should be specified with the file, on the command line for example, because some 3d modelers use the convention up = (0, 0, 1)).
 
@@ -107,7 +111,11 @@ int ViewerApplication::run() {
             // Pass value if location not null
             const auto lightDirectionInViewSpace =
                 glm::normalize(glm::vec3(viewMatrix * glm::vec4(lightDirection, 0.)));                                                       // Transform to viexMatrix then normalize it
-            glUniform3f(uLightDirectionLocation, lightDirectionInViewSpace[0], lightDirectionInViewSpace[1], lightDirectionInViewSpace[2]);  // Pass each value to fragment shader like that
+            if (lightFromCamera) {
+                glUniform3f(uLightDirectionLocation, 0, 0, 1);
+            } else {
+                glUniform3f(uLightDirectionLocation, lightDirectionInViewSpace[0], lightDirectionInViewSpace[1], lightDirectionInViewSpace[2]);  // Pass each value to fragment shader like that
+            }
         }
 
         if (uLightIntensityLocation >= 0) {
@@ -228,6 +236,50 @@ int ViewerApplication::run() {
                 cameraController->setCamera(currentCamera);
             }
 
+            if (ImGui::CollapsingHeader("Light",
+                                        ImGuiTreeNodeFlags_DefaultOpen)) {
+                static float phi = 0;
+                static float theta = 0;
+                static float intensity[3] = {1.0f, 1.0f, 1.0f};
+                static bool autoIncrement = true;
+                static bool pressed = true;
+                // static else it reset every loop
+
+                if (autoIncrement) {
+                    // increment phi and theta value each render loop
+                    theta = (theta + 0.001);
+                    if (theta >= 6.28) {
+                        theta = 0;
+                    }
+                    phi = (phi + 0.001);
+                    if (phi >= 3.14) {
+                        phi = 0;
+                    }
+                }
+
+                lightDirection = glm::vec3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
+
+                if (ImGui::SliderAngle("Phi", &phi, 0, 180) ||
+                    ImGui::SliderAngle("Theta", &theta, 0, 360)) {
+                    lightDirection = glm::vec3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
+                }
+                if (ImGui::ColorEdit3("lightIntensity", intensity)) {
+                    lightIntensity.x = intensity[0];
+                    lightIntensity.y = intensity[1];
+                    lightIntensity.z = intensity[2];
+                }
+                if (ImGui::Checkbox("Lighting from camera", &lightFromCamera)) {
+                    glUniform3f(uLightDirectionLocation, 0, 0, 1);
+                }
+                if (ImGui::Checkbox("Auto-increment phi and theta", &pressed)) {
+                    if (autoIncrement) {
+                        autoIncrement = false;
+                    } else {
+                        autoIncrement = true;
+                    }
+                }
+            }
+
             if (ImGui::CollapsingHeader("Camera",
                                         ImGuiTreeNodeFlags_DefaultOpen)) {
                 ImGui::Text("eye: %.3f %.3f %.3f", camera.eye().x,
@@ -252,8 +304,6 @@ int ViewerApplication::run() {
                     const auto str = ss.str();
                     glfwSetClipboardString(m_GLFWHandle.window(), str.c_str());
                 }
-            }
-            if (e == 1) {
             }
             ImGui::End();
         }
