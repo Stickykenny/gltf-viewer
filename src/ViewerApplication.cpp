@@ -47,6 +47,13 @@ int ViewerApplication::run() {
     const auto uBaseColorFactorLocation =
         glGetUniformLocation(glslProgram.glId(), "uBaseColorFactor");
 
+    const auto uMetallicFactorLocation =
+        glGetUniformLocation(glslProgram.glId(), "uMetallicFactor");
+    const auto uRoughnessFactorLocation =
+        glGetUniformLocation(glslProgram.glId(), "uRougnessFactor");
+    const auto uMetallicRoughnessTextureLocation =
+        glGetUniformLocation(glslProgram.glId(), "uMetallicRoughnessTexture");
+
     const auto uLightDirectionLocation =
         glGetUniformLocation(glslProgram.glId(), "uLightDirection");
     const auto uLightIntensityLocation =
@@ -154,6 +161,29 @@ int ViewerApplication::run() {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, textureObject);
                 glUniform1i(uBaseColorTexture, 0);
+
+                if (uMetallicFactorLocation >= 0) {
+                    glUniform1f(
+                        uMetallicFactorLocation, (float)pbrMetallicRoughness.metallicFactor);
+                }
+                if (uRoughnessFactorLocation >= 0) {
+                    glUniform1f(
+                        uRoughnessFactorLocation, (float)pbrMetallicRoughness.roughnessFactor);
+                }
+                if (uMetallicRoughnessTextureLocation >= 0) {
+                    auto textureObject = 0u;
+                    if (pbrMetallicRoughness.metallicRoughnessTexture.index >= 0) {
+                        const auto &texture =
+                            model.textures[pbrMetallicRoughness.metallicRoughnessTexture.index];
+                        if (texture.source >= 0) {
+                            textureObject = textureObjects[texture.source];
+                        }
+                    }
+
+                    glActiveTexture(GL_TEXTURE1);
+                    glBindTexture(GL_TEXTURE_2D, textureObject);
+                    glUniform1i(uMetallicRoughnessTextureLocation, 1);
+                }
             }
         } else {
             if (uBaseColorFactorLocation >= 0) {
@@ -163,6 +193,17 @@ int ViewerApplication::run() {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, whiteTexture);
                 glUniform1i(uBaseColorTexture, 0);
+            }
+            if (uMetallicFactorLocation >= 0) {
+                glUniform1f(uMetallicFactorLocation, 1.f);
+            }
+            if (uRoughnessFactorLocation >= 0) {
+                glUniform1f(uRoughnessFactorLocation, 1.f);
+            }
+            if (uMetallicRoughnessTextureLocation >= 0) {
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, 0);
+                glUniform1i(uMetallicRoughnessTextureLocation, 1);
             }
         }
     };
@@ -214,6 +255,7 @@ int ViewerApplication::run() {
                     for (size_t i = 0; i < current_mesh.primitives.size(); i++) {
                         const auto &primitive = current_mesh.primitives[i];
                         const auto vao = VertexArrayObjects[vaoRange.begin + i];
+                        
                         bindMaterial(primitive.material);
                         glBindVertexArray(vao);
 
@@ -312,7 +354,7 @@ int ViewerApplication::run() {
 
                 const int nb_channels = 3;
                 static float intensity[nb_channels] = {lightIntensity[0], lightIntensity[1], lightIntensity[2]};
-                static float intensity_delta_min = 0.00075f, intensity_delta_max = .0002f;
+                static float intensity_delta_min = 0.00025f, intensity_delta_max = .0002f;
                 static float intensity_delta[nb_channels] = {random_gen(intensity_delta_min, intensity_delta_max), random_gen(intensity_delta_min, intensity_delta_max), random_gen(intensity_delta_min, intensity_delta_max)};
 
                 static bool autoIncrement = true;
@@ -325,11 +367,11 @@ int ViewerApplication::run() {
                     // increment phi and theta value each render loop
                     theta = (theta + angle_delta[0]);
                     if (theta >= 6.28 || theta <= 0.f) {
-                        angle_delta[0] = angle_delta[0] < 0 ? random_gen(intensity_delta_min, intensity_delta_max) : -random_gen(intensity_delta_min, intensity_delta_max);
+                        angle_delta[0] = theta < 0 ? random_gen(intensity_delta_min, intensity_delta_max) : -random_gen(intensity_delta_min, intensity_delta_max);
                     }
                     phi = (phi + angle_delta[1]);
                     if (phi >= 3.14 || phi <= 0.f) {
-                        angle_delta[1] = angle_delta[1] < 0 ? random_gen(intensity_delta_min, intensity_delta_max) : -random_gen(intensity_delta_min, intensity_delta_max);
+                        angle_delta[1] = phi < 0 ? random_gen(intensity_delta_min, intensity_delta_max) : -random_gen(intensity_delta_min, intensity_delta_max);
                     }
                 }
 
@@ -338,7 +380,7 @@ int ViewerApplication::run() {
                     for (int i = 0; i < nb_channels; ++i) {
                         intensity[i] += intensity_delta[i];
                         if (intensity[i] >= 1.f || intensity[i] <= 0.f) {
-                            intensity_delta[i] = -intensity_delta[i];
+                            intensity_delta[i] = intensity[i] <= 0 ? random_gen(intensity_delta_min, intensity_delta_max) : -random_gen(intensity_delta_min, intensity_delta_max);
                         }
                     }
                     lightIntensity.x = intensity[0];
