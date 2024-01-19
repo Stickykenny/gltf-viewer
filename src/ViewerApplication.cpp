@@ -54,6 +54,11 @@ int ViewerApplication::run() {
     const auto uMetallicRoughnessTextureLocation =
         glGetUniformLocation(glslProgram.glId(), "uMetallicRoughnessTexture");
 
+    const auto uEmissiveFactorLocation =
+        glGetUniformLocation(glslProgram.glId(), "uEmissiveFactor");
+    const auto uEmissiveTextureLocation =
+        glGetUniformLocation(glslProgram.glId(), "uEmissiveTexture");
+
     const auto uLightDirectionLocation =
         glGetUniformLocation(glslProgram.glId(), "uLightDirection");
     const auto uLightIntensityLocation =
@@ -184,8 +189,30 @@ int ViewerApplication::run() {
                     glBindTexture(GL_TEXTURE_2D, textureObject);
                     glUniform1i(uMetallicRoughnessTextureLocation, 1);
                 }
+
+                if (uEmissiveFactorLocation >= 0) {
+                    glUniform3f(
+                        uEmissiveFactorLocation, (float)material.emissiveFactor[0],
+                        (float)material.emissiveFactor[1],
+                        (float)material.emissiveFactor[2]);
+                }
+                if (uEmissiveTextureLocation >= 0) {
+                    auto textureObject = 0u;
+                    if (material.emissiveTexture.index >= 0) {
+                        const auto &texture =
+                            model.textures[material.emissiveTexture.index];
+                        if (texture.source >= 0) {
+                            textureObject = textureObjects[texture.source];
+                        }
+                    }
+
+                    glActiveTexture(GL_TEXTURE2);
+                    glBindTexture(GL_TEXTURE_2D, textureObject);
+                    glUniform1i(uEmissiveTextureLocation, 2);
+                }
             }
         } else {
+            // No texture found
             if (uBaseColorFactorLocation >= 0) {
                 glUniform4f(uBaseColorFactorLocation, 1, 1, 1, 1);
             }
@@ -204,6 +231,14 @@ int ViewerApplication::run() {
                 glActiveTexture(GL_TEXTURE1);
                 glBindTexture(GL_TEXTURE_2D, 0);
                 glUniform1i(uMetallicRoughnessTextureLocation, 1);
+            }
+            if (uEmissiveFactorLocation >= 0) {
+                glUniform3f(uEmissiveFactorLocation, 0., 0., 0.);
+            }
+            if (uEmissiveTextureLocation >= 0) {
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, 0);
+                glUniform1i(uEmissiveTextureLocation, 2);
             }
         }
     };

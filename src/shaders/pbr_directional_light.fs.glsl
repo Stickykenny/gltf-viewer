@@ -15,6 +15,11 @@ uniform float uMetallicFactor;
 uniform float uRougnessFactor;
 uniform sampler2D uMetallicRoughnessTexture;
 
+// Emmisive part
+uniform vec3 uEmissiveFactor;
+uniform sampler2D uEmissiveTexture;
+
+
 out vec3 fColor;
 
 // Constants
@@ -109,4 +114,38 @@ void main()
 
   fColor = LINEARtoSRGB(material * uLightIntensity * NdotL);
 
+
+  // Emissive 
+  vec3 emissive =
+      SRGBtoLINEAR(texture(uEmissiveTexture, vTexCoords)).rgb * uEmissiveFactor;
+  fColor = LINEARtoSRGB((material * uLightIntensity * NdotL)+ emissive);
 }
+
+/*
+// Material reference
+{
+    "materials": [
+        {
+            "name": "Material0",
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [ 0.5, 0.5, 0.5, 1.0 ],
+                "baseColorTexture": {
+                    "index": 1,
+                    "texCoord": 1
+                },
+                "metallicFactor": 1,
+                "roughnessFactor": 1,
+                "metallicRoughnessTexture": {
+                    "index": 2,
+                    "texCoord": 1
+                }
+            },
+            "normalTexture": {
+                "scale": 2,
+                "index": 3,
+                "texCoord": 1
+            },
+            "emissiveFactor": [ 0.2, 0.1, 0.0 ]
+        }
+    ]
+}*/
