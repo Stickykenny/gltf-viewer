@@ -59,10 +59,20 @@ int ViewerApplication::run() {
     const auto uEmissiveTextureLocation =
         glGetUniformLocation(glslProgram.glId(), "uEmissiveTexture");
 
+    // Occlusion
+    const auto uOcclusionStrengthLocation =
+        glGetUniformLocation(glslProgram.glId(), "uOcclusionStrength");
+    const auto uOcclusionTextureLocation =
+        glGetUniformLocation(glslProgram.glId(), "uOcclusionTexture");
+    const auto uOcclusionqOnOffLocation =
+        glGetUniformLocation(glslProgram.glId(), "uOcclusionOnOff");
+
     const auto uLightDirectionLocation =
         glGetUniformLocation(glslProgram.glId(), "uLightDirection");
     const auto uLightIntensityLocation =
         glGetUniformLocation(glslProgram.glId(), "uLightIntensity");
+
+    bool useOcclusion = true;
     glm::vec3 lightDirection(1);
     glm::vec3 lightIntensity({random_gen(0.f, 1.f), random_gen(0.f, 1.f), random_gen(0.f, 1.f)});
     bool lightFromCamera = false;
@@ -210,6 +220,26 @@ int ViewerApplication::run() {
                     glBindTexture(GL_TEXTURE_2D, textureObject);
                     glUniform1i(uEmissiveTextureLocation, 2);
                 }
+
+                // Occlusion
+                const auto &occlusionTexture = material.occlusionTexture;
+                if (uOcclusionStrengthLocation >= 0) {
+                    glUniform1f(uOcclusionStrengthLocation, occlusionTexture.strength);
+                }
+                if (uOcclusionTextureLocation >= 0) {
+                    auto textureObject = 0;
+                    if (occlusionTexture.index >= 0) {
+                        const auto &texture =
+                            model.textures[occlusionTexture.index];
+                        if (texture.source >= 0) {
+                            textureObject = textureObjects[texture.source];
+                        }
+                    }
+
+                    glActiveTexture(GL_TEXTURE3);
+                    glBindTexture(GL_TEXTURE_2D, textureObject);
+                    glUniform1i(uOcclusionTextureLocation, 3);
+                }
             }
         } else {
             // No texture found
@@ -240,6 +270,14 @@ int ViewerApplication::run() {
                 glBindTexture(GL_TEXTURE_2D, 0);
                 glUniform1i(uEmissiveTextureLocation, 2);
             }
+            if (uOcclusionStrengthLocation >= 0) {
+                glUniform1f(uOcclusionStrengthLocation, 0.);
+            }
+            if (uOcclusionTextureLocation >= 0) {
+                glActiveTexture(GL_TEXTURE3);
+                glBindTexture(GL_TEXTURE_2D, 0);
+                glUniform1i(uOcclusionTextureLocation, 3);
+            }
         }
     };
 
@@ -263,6 +301,10 @@ int ViewerApplication::run() {
 
         if (uLightIntensityLocation >= 0) {
             glUniform3f(uLightIntensityLocation, lightIntensity[0], lightIntensity[1], lightIntensity[2]);
+        }
+
+        if (uOcclusionqOnOffLocation >= 0) {
+            glUniform1i(uOcclusionqOnOffLocation, useOcclusion);
         }
 
         // The recursive function that should draw a node
@@ -392,10 +434,10 @@ int ViewerApplication::run() {
                 static float intensity_delta_min = 0.00025f, intensity_delta_max = .0002f;
                 static float intensity_delta[nb_channels] = {random_gen(intensity_delta_min, intensity_delta_max), random_gen(intensity_delta_min, intensity_delta_max), random_gen(intensity_delta_min, intensity_delta_max)};
 
-                static bool autoIncrement = true;
-                static bool pressed = true;
-                static bool autoIncrement_colors = true;
-                static bool pressed_colors = true;
+                static bool autoIncrement = false;
+                static bool pressed = autoIncrement;
+                static bool autoIncrement_colors = false;
+                static bool pressed_colors = autoIncrement_colors;
                 // static else it reset every loop
 
                 if (autoIncrement) {
@@ -452,6 +494,7 @@ int ViewerApplication::run() {
                         autoIncrement_colors = true;
                     }
                 }
+                ImGui::Checkbox("Apply Occlusion", &useOcclusion);
             }
 
             if (ImGui::CollapsingHeader("Camera",
