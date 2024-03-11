@@ -60,12 +60,13 @@ int ViewerApplication::run() {
         glGetUniformLocation(glslProgram.glId(), "uEmissiveTexture");
 
     // Occlusion
-    const auto uOcclusionStrengthLocation =
-        glGetUniformLocation(glslProgram.glId(), "uOcclusionStrength");
-    const auto uOcclusionTextureLocation =
-        glGetUniformLocation(glslProgram.glId(), "uOcclusionTexture");
-    const auto uOcclusionqOnOffLocation =
-        glGetUniformLocation(glslProgram.glId(), "uOcclusionOnOff");
+    const auto uOcclusionTextureLocation  =
+      glGetUniformLocation(glslProgram.glId(), "uOcclusionTexture");
+  const auto uOcclusionStrengthLocation =
+      glGetUniformLocation(glslProgram.glId(), "uOcclusionStrength");
+  const auto uOcclusionOnOffLocation =
+      glGetUniformLocation(glslProgram.glId(), "uOcclusionOnOff");
+
 
     const auto uLightDirectionLocation =
         glGetUniformLocation(glslProgram.glId(), "uLightDirection");
@@ -74,11 +75,11 @@ int ViewerApplication::run() {
 
     bool useOcclusion = true;
     glm::vec3 lightDirection(1);
-    glm::vec3 lightIntensity({random_gen(0.f, 1.f), random_gen(0.f, 1.f), random_gen(0.f, 1.f)});
+    glm::vec3 lightIntensity({1.,1.,1.});
     bool lightFromCamera = false;
 
     // Build projection matrix
-    auto maxDistance = 500.f;  // TODO use scene bounds instead to compute this
+    auto maxDistance = 500.f;  // Default value, replaced with scene bounds
 
     tinygltf::Model model;
     if (!loadGltfFile(model)) {
@@ -88,16 +89,14 @@ int ViewerApplication::run() {
     glm::vec3 bboxMin, bboxMax;
     computeSceneBounds(model, bboxMin, bboxMax);
     const auto diag = bboxMax - bboxMin;
-    maxDistance = glm::length(diag);  // TODO use scene bounds instead to compute this
+    maxDistance = glm::length(diag);
 
     maxDistance = maxDistance > 0.f ? maxDistance : 100.f;
     const auto projMatrix =
         glm::perspective(70.f, float(m_nWindowWidth) / m_nWindowHeight,
                          0.001f * maxDistance, 1.5f * maxDistance);
 
-    // TODO Implement a new CameraController model and use it instead. Propose the choice from the GUI
     // FirstPersonCameraController cameraController{m_GLFWHandle.window(), 0.1f * maxDistance};
-
     // TrackballCameraController cameraController{m_GLFWHandle.window(), 0.1f * maxDistance};
     std::unique_ptr<CameraController> cameraController = std::make_unique<TrackballCameraController>(m_GLFWHandle.window(), 0.1f * maxDistance);
     ;
@@ -110,9 +109,7 @@ int ViewerApplication::run() {
     if (m_hasUserCamera) {
         cameraController->setCamera(m_userCamera);
     } else {
-        // TODO Use scene bounds to compute a better default camera
         // cameraController.setCamera(Camera{glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0)});
-
         //  Camera(glm::vec3 e, glm::vec3 c, glm::vec3 u) : m_eye(e), m_center(c), m_up(u)
 
         const auto up = glm::vec3(0, 1, 0);
@@ -139,10 +136,7 @@ int ViewerApplication::run() {
 
     // ======= END Textures =============
 
-    // TODO Creation of Buffer Objects
     const auto bufferObjects = ViewerApplication::createBufferObjects(model);
-
-    // TODO Creation of Vertex Array Objects
     std::vector<VaoRange> meshToVertexArrays;
     const auto VertexArrayObjects = ViewerApplication::createVertexArrayObjects(model, bufferObjects, meshToVertexArrays);
 
@@ -171,7 +165,6 @@ int ViewerApplication::run() {
                         textureObject = textureObjects[texture.source];
                     }
                 }
-              
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, textureObject);
@@ -186,7 +179,7 @@ int ViewerApplication::run() {
                         uRoughnessFactorLocation, (float)pbrMetallicRoughness.roughnessFactor);
                 }
                 if (uMetallicRoughnessTextureLocation >= 0) {
-                    auto textureObject = 0u;
+                    auto textureObject = whiteTexture;
                     if (pbrMetallicRoughness.metallicRoughnessTexture.index >= 0) {
                         const auto &texture =
                             model.textures[pbrMetallicRoughness.metallicRoughnessTexture.index];
@@ -207,7 +200,7 @@ int ViewerApplication::run() {
                         (float)material.emissiveFactor[2]);
                 }
                 if (uEmissiveTextureLocation >= 0) {
-                    auto textureObject = 0u;
+                    auto textureObject = whiteTexture;
                     if (material.emissiveTexture.index >= 0) {
                         const auto &texture =
                             model.textures[material.emissiveTexture.index];
@@ -224,18 +217,16 @@ int ViewerApplication::run() {
                 // Occlusion
                 const auto &occlusionTexture = material.occlusionTexture;
                 if (uOcclusionStrengthLocation >= 0) {
-                    glUniform1f(uOcclusionStrengthLocation, occlusionTexture.strength);
+                    glUniform1f(uOcclusionStrengthLocation, (float)material.occlusionTexture.strength);
                 }
                 if (uOcclusionTextureLocation >= 0) {
-                    auto textureObject = 0;
+                    auto textureObject = whiteTexture;
                     if (occlusionTexture.index >= 0) {
-                        const auto &texture =
-                            model.textures[occlusionTexture.index];
+                        const auto &texture = model.textures[occlusionTexture.index];
                         if (texture.source >= 0) {
                             textureObject = textureObjects[texture.source];
                         }
                     }
-
                     glActiveTexture(GL_TEXTURE3);
                     glBindTexture(GL_TEXTURE_2D, textureObject);
                     glUniform1i(uOcclusionTextureLocation, 3);
@@ -291,7 +282,7 @@ int ViewerApplication::run() {
         if (uLightDirectionLocation >= 0) {
             // Pass value if location not null
             const auto lightDirectionInViewSpace =
-                glm::normalize(glm::vec3(viewMatrix * glm::vec4(lightDirection, 0.)));                                                       // Transform to viexMatrix then normalize it
+                glm::normalize(glm::vec3(viewMatrix * glm::vec4(lightDirection, 0.)));  // Transform to viexMatrix then normalize it
             if (lightFromCamera) {
                 glUniform3f(uLightDirectionLocation, 0, 0, 1);
             } else {
@@ -303,15 +294,14 @@ int ViewerApplication::run() {
             glUniform3f(uLightIntensityLocation, lightIntensity[0], lightIntensity[1], lightIntensity[2]);
         }
 
-        if (uOcclusionqOnOffLocation >= 0) {
-            glUniform1i(uOcclusionqOnOffLocation, useOcclusion);
+        if (uOcclusionOnOffLocation >= 0) {
+            glUniform1i(uOcclusionOnOffLocation, useOcclusion);
         }
 
         // The recursive function that should draw a node
         // We use a std::function because a simple lambda cannot be recursive
         const std::function<void(int, const glm::mat4 &)> drawNode =
             [&](int nodeIdx, const glm::mat4 &parentMatrix) {
-                // TODO The drawNode function
                 auto node = model.nodes[nodeIdx];
                 glm::mat4 modelMatrix = getLocalToWorldMatrix(node, parentMatrix);
                 if (node.mesh >= 0) {
@@ -332,7 +322,7 @@ int ViewerApplication::run() {
                     for (size_t i = 0; i < current_mesh.primitives.size(); i++) {
                         const auto &primitive = current_mesh.primitives[i];
                         const auto vao = VertexArrayObjects[vaoRange.begin + i];
-                        
+
                         bindMaterial(primitive.material);
                         glBindVertexArray(vao);
 
@@ -363,19 +353,14 @@ int ViewerApplication::run() {
 
         // Draw the scene referenced by gltf file
         if (model.defaultScene >= 0) {
-            // TODO Draw all nodes
             for (const auto nodeIdx : model.scenes[model.defaultScene].nodes) {
                 drawNode(nodeIdx, glm::mat4(1));
             }
         }
     };
 
-    // --output functionnality
-
-    // Please change argument in .vscode/bash-init.sh, view_sponza
     std::cout << m_OutputPath.string() << std::endl;
     if (!m_OutputPath.empty()) {
-        // TODO
         std::vector<unsigned char> pixels(m_nWindowHeight * m_nWindowWidth * 3);
 
         renderToImage(m_nWindowWidth, m_nWindowHeight, 3, pixels.data(), [&]() {
