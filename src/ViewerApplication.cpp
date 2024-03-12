@@ -73,7 +73,16 @@ int ViewerApplication::run() {
     const auto uLightIntensityLocation =
         glGetUniformLocation(glslProgram.glId(), "uLightIntensity");
 
+    // Normal Mapping
+    const auto uNormalTextureOnOffLocation =
+        glGetUniformLocation(glslProgram.glId(), "uNormalTextureOnOff");
+    const auto uNormalTextureScaleLocation =
+        glGetUniformLocation(glslProgram.glId(), "uNormalTextureScale");
+    const auto uNormalMapLocation =
+        glGetUniformLocation(glslProgram.glId(), "uNormalMap");
+
     bool useOcclusion = true;
+    bool useNormalMap = true;
     glm::vec3 lightDirection(1);
     glm::vec3 lightIntensity({1.,1.,1.});
     bool lightFromCamera = false;
@@ -231,6 +240,25 @@ int ViewerApplication::run() {
                     glBindTexture(GL_TEXTURE_2D, textureObject);
                     glUniform1i(uOcclusionTextureLocation, 3);
                 }
+                // Normal Mapping
+                const auto &normalTexture = material.normalTexture;
+                if (uNormalMapLocation >= 0) {
+                    auto textureObject = 0;
+                    if (normalTexture.index >= 0) {
+                        const auto &texture =
+                            model.textures[normalTexture.index];
+                        if (texture.source >= 0) {
+                            textureObject = textureObjects[texture.source];
+                        }
+                    }
+
+                    if (uNormalTextureScaleLocation >= 0) {
+                        glUniform1f(uNormalTextureScaleLocation, (float)normalTexture.scale);
+                    }
+                    glActiveTexture(GL_TEXTURE4);
+                    glBindTexture(GL_TEXTURE_2D, textureObject);
+                    glUniform1i(uNormalMapLocation, 4);
+                }
             }
         } else {
             // No texture found
@@ -269,6 +297,14 @@ int ViewerApplication::run() {
                 glBindTexture(GL_TEXTURE_2D, 0);
                 glUniform1i(uOcclusionTextureLocation, 3);
             }
+            if (uNormalTextureScaleLocation >= 0) {
+                glUniform1f(uNormalTextureScaleLocation, 0.);
+            }
+            if (uNormalMapLocation >= 0) {
+                glActiveTexture(GL_TEXTURE4);
+                glBindTexture(GL_TEXTURE_2D, 0);
+                glUniform1i(uNormalMapLocation, 4);
+            }
         }
     };
 
@@ -296,6 +332,10 @@ int ViewerApplication::run() {
 
         if (uOcclusionOnOffLocation >= 0) {
             glUniform1i(uOcclusionOnOffLocation, useOcclusion);
+        }
+
+        if (uNormalTextureOnOffLocation >= 0) {
+            glUniform1i(uNormalTextureOnOffLocation, useNormalMap);
         }
 
         // The recursive function that should draw a node
@@ -478,6 +518,7 @@ int ViewerApplication::run() {
                     }
                 }
                 ImGui::Checkbox("Apply Occlusion", &useOcclusion);
+                ImGui::Checkbox("Apply Normal Map", &useNormalMap);
             }
 
             if (ImGui::CollapsingHeader("Camera",
