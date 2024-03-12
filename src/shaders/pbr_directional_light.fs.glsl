@@ -33,13 +33,7 @@ const float INV_GAMMA = 1. / GAMMA;
 const float M_PI = 3.141592653589793;
 const float M_1_PI = 1.0 / M_PI;
 
-// We need some simple tone mapping functions
-// Basic gamma = 2.2 implementation
-// Stolen here:
-// https://github.com/KhronosGroup/glTF-Sample-Viewer/blob/master/src/shaders/tonemapping.glsl
-
 // linear to sRGB approximation
-// see http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
 vec3 LINEARtoSRGB(vec3 color) { return pow(color, vec3(INV_GAMMA)); }
 
 // sRGB to linear approximation
@@ -88,7 +82,7 @@ void main()
   vec3 metallic  = vec3(MetallicRoughnessFromTexture.b * uMetallicFactor);
   float roughness = MetallicRoughnessFromTexture.g * uRougnessFactor;
 
-  vec3 c_diff = mix(baseColor.rgb, vec3(black), metallic);   // mix(vec3 , vec3 float)
+  vec3 c_diff = mix(baseColor.rgb, vec3(black), metallic);   // mix(vec3 , vec3, float)
   vec3 f0 = mix(vec3(0.04), baseColor.rgb, metallic);
   float alpha = roughness * roughness;
 
@@ -98,7 +92,7 @@ void main()
   // D : Trowbridge-Reitz/GGX microfacet distribution
   float DenomD = (NdotH * NdotH * (alpha*alpha - 1.) + 1.);
   float NumD = alpha*alpha;
-  float D = NumD/(M_PI*DenomD*DenomD);
+  float D = M_1_PI*NumD/(M_PI*DenomD*DenomD);
 
   // G : separable form of the Smith joint masking-shadowing function
   float DenomG_1 = NdotL+sqrt(alpha*alpha+(1-alpha*alpha)*NdotL*NdotL);
@@ -121,8 +115,7 @@ void main()
 
 
   // Emissive 
-  vec3 emissive =
-      SRGBtoLINEAR(texture(uEmissiveTexture, vTexCoords)).rgb * uEmissiveFactor;
+  vec3 emissive = SRGBtoLINEAR(texture2D(uEmissiveTexture, vTexCoords)).rgb * uEmissiveFactor;
 
   vec3 color = (material * uLightIntensity * NdotL)+ emissive;
 
@@ -130,8 +123,7 @@ void main()
   // Occlusion
   if (uOcclusionOnOff == 1) {
 
-    vec4 OcclusionFromTexture =
-        (texture2D(uOcclusionTexture, vTexCoords));
+    vec4 OcclusionFromTexture = (texture2D(uOcclusionTexture, vTexCoords));
     //float occlusion  = (OcclusionFromTexture.r * uOcclusionStrength);
     //color = mix(color, vec3(black), occlusion); 
         float ao = texture2D(uOcclusionTexture, vTexCoords).r;
@@ -141,32 +133,3 @@ void main()
 
   fColor = LINEARtoSRGB(color);
 }
-
-/*
-// Material reference
-{
-    "materials": [
-        {
-            "name": "Material0",
-            "pbrMetallicRoughness": {
-                "baseColorFactor": [ 0.5, 0.5, 0.5, 1.0 ],
-                "baseColorTexture": {
-                    "index": 1,
-                    "texCoord": 1
-                },
-                "metallicFactor": 1,
-                "roughnessFactor": 1,
-                "metallicRoughnessTexture": {
-                    "index": 2,
-                    "texCoord": 1
-                }
-            },
-            "normalTexture": {
-                "scale": 2,
-                "index": 3,
-                "texCoord": 1
-            },
-            "emissiveFactor": [ 0.2, 0.1, 0.0 ]
-        }
-    ]
-}*/
