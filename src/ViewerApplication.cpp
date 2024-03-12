@@ -415,9 +415,10 @@ int ViewerApplication::run() {
                 static float angle_delta[2] = {random_gen(0.f, .002f), random_gen(0.f, .002f)};
 
                 const int nb_channels = 3;
-                static float intensity[nb_channels] = {lightIntensity[0], lightIntensity[1], lightIntensity[2]};
-                static float intensity_delta_min = 0.00025f, intensity_delta_max = .0002f;
-                static float intensity_delta[nb_channels] = {random_gen(intensity_delta_min, intensity_delta_max), random_gen(intensity_delta_min, intensity_delta_max), random_gen(intensity_delta_min, intensity_delta_max)};
+                static glm::vec3 lightColor(lightIntensity[0], lightIntensity[1], lightIntensity[2]);
+                static float color_delta_min = 0.00025f, color_delta_max = .0002f;
+                static float color_delta[nb_channels] = {random_gen(color_delta_min, color_delta_max), random_gen(color_delta_min, color_delta_max), random_gen(color_delta_min, color_delta_max)};
+                static float lightIntensityFactor = 1.;
 
                 static bool autoIncrement = false;
                 static bool pressed = autoIncrement;
@@ -429,25 +430,23 @@ int ViewerApplication::run() {
                     // increment phi and theta value each render loop
                     theta = (theta + angle_delta[0]);
                     if (theta >= 6.28 || theta <= 0.f) {
-                        angle_delta[0] = theta < 0 ? random_gen(intensity_delta_min, intensity_delta_max) : -random_gen(intensity_delta_min, intensity_delta_max);
+                        angle_delta[0] = theta < 0 ? random_gen(color_delta_min, color_delta_max) : -random_gen(color_delta_min, color_delta_max);
                     }
                     phi = (phi + angle_delta[1]);
                     if (phi >= 3.14 || phi <= 0.f) {
-                        angle_delta[1] = phi < 0 ? random_gen(intensity_delta_min, intensity_delta_max) : -random_gen(intensity_delta_min, intensity_delta_max);
+                        angle_delta[1] = phi < 0 ? random_gen(color_delta_min, color_delta_max) : -random_gen(color_delta_min, color_delta_max);
                     }
                 }
 
                 if (autoIncrement_colors) {
                     // Make colors value change
                     for (int i = 0; i < nb_channels; ++i) {
-                        intensity[i] += intensity_delta[i];
-                        if (intensity[i] >= 1.f || intensity[i] <= 0.f) {
-                            intensity_delta[i] = intensity[i] <= 0 ? random_gen(intensity_delta_min, intensity_delta_max) : -random_gen(intensity_delta_min, intensity_delta_max);
+                        lightColor[i] += color_delta[i];
+                        if (lightColor[i] >= 1.f || lightColor[i] <= 0.f) {
+                            color_delta[i] = lightColor[i] <= 0 ? random_gen(color_delta_min, color_delta_max) : -random_gen(color_delta_min, color_delta_max);
                         }
                     }
-                    lightIntensity.x = intensity[0];
-                    lightIntensity.y = intensity[1];
-                    lightIntensity.z = intensity[2];
+                    lightIntensity = lightColor * lightIntensityFactor;
                 }
 
                 lightDirection = glm::vec3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
@@ -456,10 +455,9 @@ int ViewerApplication::run() {
                     ImGui::SliderAngle("Theta", &theta, 0, 360)) {
                     lightDirection = glm::vec3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
                 }
-                if (ImGui::ColorEdit3("lightIntensity", intensity)) {
-                    lightIntensity.x = intensity[0];
-                    lightIntensity.y = intensity[1];
-                    lightIntensity.z = intensity[2];
+                if (ImGui::ColorEdit3("LightColor", (float *)&lightColor) || 
+                    ImGui::InputFloat("intensity", &lightIntensityFactor)) {
+                    lightIntensity = lightColor * lightIntensityFactor;
                 }
 
                 if (ImGui::Checkbox("Lighting from camera", &lightFromCamera)) {
