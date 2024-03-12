@@ -92,7 +92,7 @@ void main()
   // D : Trowbridge-Reitz/GGX microfacet distribution
   float DenomD = (NdotH * NdotH * (alpha*alpha - 1.) + 1.);
   float NumD = alpha*alpha;
-  float D = M_1_PI*NumD/(M_PI*DenomD*DenomD);
+  float D = NumD/(M_PI*DenomD*DenomD);
 
   // G : separable form of the Smith joint masking-shadowing function
   float DenomG_1 = NdotL+sqrt(alpha*alpha+(1-alpha*alpha)*NdotL*NdotL);
