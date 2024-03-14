@@ -25,7 +25,7 @@ uniform sampler2D uOcclusionTexture;
 uniform float uOcclusionStrength;
 
 // Normal texture
-uniform sampler2D normalMap;
+uniform sampler2D uNormalTexture;
 uniform float uNormalTextureScale;
 uniform int uNormalTextureOnOff;
 
@@ -51,11 +51,10 @@ void main()
 {
 
   vec3 N = normalize(vViewSpaceNormal);
-
   if (uNormalTextureOnOff == 1) {
     // Normal Map
-    N = texture(normalMap, vTexCoords).rgb;
-    N = normalize(N * 2.0 - 1.0) * vec3(uNormalTextureScale, uNormalTextureScale, 1);
+    N = texture(uNormalTexture, vTexCoords).rgb ;
+    N = normalize((N * 2.0 - 1.0)*uNormalTextureScale);
   }
   
   //
@@ -145,4 +144,5 @@ void main()
   }
 
   fColor = LINEARtoSRGB(color);
+
 }

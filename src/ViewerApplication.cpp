@@ -78,13 +78,14 @@ int ViewerApplication::run() {
         glGetUniformLocation(glslProgram.glId(), "uNormalTextureOnOff");
     const auto uNormalTextureScaleLocation =
         glGetUniformLocation(glslProgram.glId(), "uNormalTextureScale");
-    const auto uNormalMapLocation =
-        glGetUniformLocation(glslProgram.glId(), "uNormalMap");
+    const auto uNormalTextureLocation =
+        glGetUniformLocation(glslProgram.glId(), "uNormalTexture");
 
     bool useOcclusion = true;
     bool useNormalMap = true;
     glm::vec3 lightDirection(1);
     glm::vec3 lightIntensity({1.,1.,1.});
+    static float lightIntensityFactor = 5.;
     bool lightFromCamera = false;
 
     // Build projection matrix
@@ -242,8 +243,8 @@ int ViewerApplication::run() {
                 }
                 // Normal Mapping
                 const auto &normalTexture = material.normalTexture;
-                if (uNormalMapLocation >= 0) {
-                    auto textureObject = 0;
+                if (uNormalTextureLocation >= 0) {
+                    auto textureObject = whiteTexture;
                     if (normalTexture.index >= 0) {
                         const auto &texture =
                             model.textures[normalTexture.index];
@@ -257,7 +258,7 @@ int ViewerApplication::run() {
                     }
                     glActiveTexture(GL_TEXTURE4);
                     glBindTexture(GL_TEXTURE_2D, textureObject);
-                    glUniform1i(uNormalMapLocation, 4);
+                    glUniform1i(uNormalTextureLocation, 4);
                 }
             }
         } else {
@@ -298,12 +299,12 @@ int ViewerApplication::run() {
                 glUniform1i(uOcclusionTextureLocation, 3);
             }
             if (uNormalTextureScaleLocation >= 0) {
-                glUniform1f(uNormalTextureScaleLocation, 0.);
+                glUniform1f(uNormalTextureScaleLocation, 0);
             }
-            if (uNormalMapLocation >= 0) {
+            if (uNormalTextureLocation >= 0) {
                 glActiveTexture(GL_TEXTURE4);
                 glBindTexture(GL_TEXTURE_2D, 0);
-                glUniform1i(uNormalMapLocation, 4);
+                glUniform1i(uNormalTextureLocation, 4);
             }
         }
     };
@@ -327,7 +328,7 @@ int ViewerApplication::run() {
         }
 
         if (uLightIntensityLocation >= 0) {
-            glUniform3f(uLightIntensityLocation, lightIntensity[0], lightIntensity[1], lightIntensity[2]);
+            glUniform3f(uLightIntensityLocation, lightIntensity[0] * lightIntensityFactor, lightIntensity[1] * lightIntensityFactor, lightIntensity[2] * lightIntensityFactor);
         }
 
         if (uOcclusionOnOffLocation >= 0) {
@@ -458,7 +459,6 @@ int ViewerApplication::run() {
                 static glm::vec3 lightColor(lightIntensity[0], lightIntensity[1], lightIntensity[2]);
                 static float color_delta_min = 0.00025f, color_delta_max = .0002f;
                 static float color_delta[nb_channels] = {random_gen(color_delta_min, color_delta_max), random_gen(color_delta_min, color_delta_max), random_gen(color_delta_min, color_delta_max)};
-                static float lightIntensityFactor = 1.;
 
                 static bool autoIncrement = false;
                 static bool pressed = autoIncrement;
@@ -486,7 +486,7 @@ int ViewerApplication::run() {
                             color_delta[i] = lightColor[i] <= 0 ? random_gen(color_delta_min, color_delta_max) : -random_gen(color_delta_min, color_delta_max);
                         }
                     }
-                    lightIntensity = lightColor * lightIntensityFactor;
+                    lightIntensity = lightColor;
                 }
 
                 lightDirection = glm::vec3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
@@ -497,7 +497,7 @@ int ViewerApplication::run() {
                 }
                 if (ImGui::ColorEdit3("LightColor", (float *)&lightColor) || 
                     ImGui::InputFloat("intensity", &lightIntensityFactor)) {
-                    lightIntensity = lightColor * lightIntensityFactor;
+                    lightIntensity = lightColor;
                 }
 
                 if (ImGui::Checkbox("Lighting from camera", &lightFromCamera)) {
