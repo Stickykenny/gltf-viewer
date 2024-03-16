@@ -457,7 +457,7 @@ int ViewerApplication::run() {
 
                 const int nb_channels = 3;
                 static glm::vec3 lightColor(lightIntensity[0], lightIntensity[1], lightIntensity[2]);
-                static float color_delta_min = 0.00025f, color_delta_max = .0002f;
+                static float color_delta_min = 0.00025f, color_delta_max = .001f;
                 static float color_delta[nb_channels] = {random_gen(color_delta_min, color_delta_max), random_gen(color_delta_min, color_delta_max), random_gen(color_delta_min, color_delta_max)};
 
                 static bool autoIncrement = false;
@@ -615,6 +615,69 @@ std::vector<GLuint> ViewerApplication::createTextureObjects(const tinygltf::Mode
     }
 
     return textureObjects;
+}
+std::vector<GLuint> ViewerApplication::createVertexArrayObjects(const tinygltf::Model &model, const std::vector<GLuint> &bufferObjects, std::vector<VaoRange> &meshIndexToVaoRange) {
+    std::vector<GLuint> vertexArrayObjects;
+    meshIndexToVaoRange.resize(model.meshes.size());
+
+    GLuint VERTEX_ATTRIB_POSITION_IDX = 0;
+    GLuint VERTEX_ATTRIB_NORMAL_IDX = 1;
+    GLuint VERTEX_ATTRIB_TEXCOORD0_IDX = 2;
+
+    std::vector<std::string> findthings = {"POSITION",
+                                           "NORMAL",
+                                           "TEXCOORD_0"};
+    std::vector<GLuint> arguments_ltop = {VERTEX_ATTRIB_POSITION_IDX,
+                                          VERTEX_ATTRIB_NORMAL_IDX,
+                                          VERTEX_ATTRIB_TEXCOORD0_IDX};
+
+    for (int meshIdx = 0; meshIdx < model.meshes.size(); ++meshIdx) {
+        const int vaoOffset = vertexArrayObjects.size();
+        int size_before = vaoOffset;
+        vertexArrayObjects.resize(vaoOffset + model.meshes[meshIdx].primitives.size());
+        const auto &vaoRange = VaoRange{vaoOffset, GLsizei(model.meshes[meshIdx].primitives.size())};
+        meshIndexToVaoRange.push_back(vaoRange);  // Will be used during rendering
+
+        glGenVertexArrays(vaoRange.count, &vertexArrayObjects[vaoRange.begin]);
+
+        for (int primitiveIdx = 0; primitiveIdx < model.meshes[meshIdx].primitives.size(); primitiveIdx++) {
+            glBindVertexArray(vertexArrayObjects[vaoOffset + primitiveIdx]);
+            auto primitive = model.meshes[meshIdx].primitives[primitiveIdx];
+
+            for (int i = 0; i < 3; i++) {
+                const auto iterator = primitive.attributes.find(findthings[i]);
+                if (iterator != end(primitive.attributes)) {
+                    const auto accessorIdx = (*iterator).second;
+                    const auto &accessor = model.accessors[accessorIdx];
+                    const auto &bufferView = model.bufferViews[accessorIdx];
+                    const auto bufferIdx = bufferView.buffer;
+
+                    const auto bufferObject = bufferObjects[bufferIdx];
+                    glEnableVertexAttribArray(arguments_ltop[i]);
+                    glBindBuffer(GL_ARRAY_BUFFER, bufferObject);
+
+                    const auto byteOffset = accessor.byteOffset + bufferView.byteOffset;
+
+                    glVertexAttribPointer(arguments_ltop[i], accessor.type,
+                                          accessor.componentType, GL_FALSE, GLsizei(bufferView.byteStride),
+                                          (const GLvoid *)(accessor.byteOffset + bufferView.byteOffset));
+                }
+            }
+            // Index array if defined
+            if (primitive.indices >= 0) {
+                const auto accessorIdx = primitive.indices;
+                const auto &accessor = model.accessors[accessorIdx];
+                const auto &bufferView = model.bufferViews[accessor.bufferView];
+                const auto bufferIdx = bufferView.buffer;
+
+                assert(GL_ELEMENT_ARRAY_BUFFER == bufferView.target);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferObjects[bufferIdx]);
+            }
+        }
+    }
+    glBindVertexArray(0);
+
+    return vertexArrayObjects;
 }
 
 ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width,

@@ -108,73 +108,7 @@ class ViewerApplication {
         // that compute the vector of buffer objects from a model and returns
         // it. Call this functions in run() after loading the glTF.
     };
-    std::vector<GLuint> createVertexArrayObjects(const tinygltf::Model &model, const std::vector<GLuint> &bufferObjects, std::vector<VaoRange> &meshIndexToVaoRange) {
-        // take the model and the buffer objects we previously created, create an array of vertex array objects and return it.
-        std::vector<GLuint> vertexArrayObjects;  // contain our vertex array objects
-                                                 //
-
-        // For each mesh of model we keep its range of VAOs
-        meshIndexToVaoRange.resize(model.meshes.size());
-
-        GLuint VERTEX_ATTRIB_POSITION_IDX = 0;
-        GLuint VERTEX_ATTRIB_NORMAL_IDX = 1;
-        GLuint VERTEX_ATTRIB_TEXCOORD0_IDX = 2;
-
-        std::vector<std::string> findthings = {"POSITION",
-                                               "NORMAL",
-                                               "TEXCOORD_0"};
-        std::vector<GLuint> arguments_ltop = {VERTEX_ATTRIB_POSITION_IDX,
-                                              VERTEX_ATTRIB_NORMAL_IDX,
-                                              VERTEX_ATTRIB_TEXCOORD0_IDX};
-
-        for (int meshIdx = 0; meshIdx < model.meshes.size(); ++meshIdx) {
-            const int vaoOffset = vertexArrayObjects.size();
-            int size_before = vaoOffset;
-            vertexArrayObjects.resize(vaoOffset + model.meshes[meshIdx].primitives.size());
-            const auto &vaoRange = VaoRange{vaoOffset, GLsizei(model.meshes[meshIdx].primitives.size())};
-            meshIndexToVaoRange.push_back(vaoRange);  // Will be used during rendering
-
-            glGenVertexArrays(vaoRange.count, &vertexArrayObjects[vaoRange.begin]);
-
-            for (int primitiveIdx = 0; primitiveIdx < model.meshes[meshIdx].primitives.size(); primitiveIdx++) {
-                glBindVertexArray(vertexArrayObjects[vaoOffset + primitiveIdx]);
-                auto primitive = model.meshes[meshIdx].primitives[primitiveIdx];
-
-                for (int i = 0; i < 3; i++) {  // I'm opening a scope because I want to reuse the variable iterator in the code for NORMAL and TEXCOORD_0
-                    const auto iterator = primitive.attributes.find(findthings[i]);
-                    if (iterator != end(primitive.attributes)) {  // If "POSITION" has been found in the map
-                        // (*iterator).first is the key "POSITION", (*iterator).second is the value, ie. the index of the accessor for this attribute
-                        const auto accessorIdx = (*iterator).second;
-                        const auto &accessor = model.accessors[accessorIdx];      // TODO get the correct tinygltf::Accessor from model.accessors
-                        const auto &bufferView = model.bufferViews[accessorIdx];  // TODO get the correct tinygltf::BufferView from model.bufferViews. You need to use the accessor
-                        const auto bufferIdx = bufferView.buffer;                 // TODO get the index of the buffer used by the bufferView (you need to use it)
-
-                        const auto bufferObject = bufferObjects[bufferIdx];  // TODO get the correct buffer object from the buffer index
-
-                        // TODO Enable the vertex attrib array corresponding to POSITION with glEnableVertexAttribArray (you need to use VERTEX_ATTRIB_POSITION_IDX which has to be defined at the top of the cpp file)
-                        glEnableVertexAttribArray(arguments_ltop[i]);
-                        // TODO Bind the buffer object to GL_ARRAY_BUFFER
-                        glBindBuffer(GL_ARRAY_BUFFER, bufferObject);
-
-                        const auto byteOffset = accessor.byteOffset + bufferView.byteOffset;
-                        // TODO Compute the total byte offset using the accessor and the buffer view
-                        // TODO Call glVertexAttribPointer with the correct arguments.
-                        glVertexAttribPointer(arguments_ltop[i], accessor.type, accessor.componentType, GL_FALSE,
-                                              bufferView.byteStride, (const GLvoid *)byteOffset);
-                        // Remember size is obtained with accessor.type, type is obtained with accessor.componentType.
-                        // The stride is obtained in the bufferView, normalized is always GL_FALSE, and pointer is the byteOffset (don't forget the cast).
-
-                        if (primitive.indices >= 0) {
-                            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferObject);
-                        }
-                    }
-                }
-            }
-        }
-
-        glBindVertexArray(0);
-        return vertexArrayObjects;
-    }
+    std::vector<GLuint> createVertexArrayObjects(const tinygltf::Model &model, const std::vector<GLuint> &bufferObjects, std::vector<VaoRange> &meshIndexToVaoRange);
 
     std::vector<GLuint> createTextureObjects(const tinygltf::Model &model) const;
 
