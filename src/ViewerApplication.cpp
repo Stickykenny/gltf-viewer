@@ -76,13 +76,20 @@ int ViewerApplication::run() {
     // Normal Mapping
     const auto uNormalTextureOnOffLocation =
         glGetUniformLocation(glslProgram.glId(), "uNormalTextureOnOff");
+    const auto uNormalTBNOnOffLocation =
+        glGetUniformLocation(glslProgram.glId(), "uNormalTBNOnOff");
     const auto uNormalTextureScaleLocation =
         glGetUniformLocation(glslProgram.glId(), "uNormalTextureScale");
     const auto uNormalTextureLocation =
         glGetUniformLocation(glslProgram.glId(), "uNormalTexture");
 
+    const auto uViewNormalOnOffLocation =
+        glGetUniformLocation(glslProgram.glId(), "uViewNormalOnOff");
+
     bool useOcclusion = true;
     bool useNormalMap = true;
+    bool useTBN = true;
+    bool viewNormal = false;
     glm::vec3 lightDirection(1);
     glm::vec3 lightIntensity({1.,1.,1.});
     static float lightIntensityFactor = 5.;
@@ -338,7 +345,12 @@ int ViewerApplication::run() {
         if (uNormalTextureOnOffLocation >= 0) {
             glUniform1i(uNormalTextureOnOffLocation, useNormalMap);
         }
-
+        if (uNormalTBNOnOffLocation >= 0) {
+            glUniform1i(uNormalTBNOnOffLocation, useTBN);
+        }
+        if (uViewNormalOnOffLocation >= 0) {
+            glUniform1i(uViewNormalOnOffLocation, viewNormal);
+        }
         // The recursive function that should draw a node
         // We use a std::function because a simple lambda cannot be recursive
         const std::function<void(int, const glm::mat4 &)> drawNode =
@@ -437,8 +449,10 @@ int ViewerApplication::run() {
                         1000.0f / ImGui::GetIO().Framerate,
                         ImGui::GetIO().Framerate);
             static int e = 1;
+            ImGui::Columns(2, "Camera");
             if (
                 ImGui::RadioButton("First Person", &e, 0) ||
+                nextColumnWrapper() ||
                 ImGui::RadioButton("Trackball", &e, 1)) {
                 const auto currentCamera = cameraController->getCamera();
                 if (e == 1) {
@@ -448,6 +462,7 @@ int ViewerApplication::run() {
                 }
                 cameraController->setCamera(currentCamera);
             }
+            ImGui::Columns();
 
             if (ImGui::CollapsingHeader("Light",
                                         ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -464,7 +479,13 @@ int ViewerApplication::run() {
                 static bool pressed = autoIncrement;
                 static bool autoIncrement_colors = false;
                 static bool pressed_colors = autoIncrement_colors;
-                // static else it reset every loop
+
+                // Normal buttons
+
+                static bool pressed_normal = useNormalMap;
+                static bool pressed_TBN = useTBN;
+
+                // static variable else it reset every loop
 
                 if (autoIncrement) {
                     // increment phi and theta value each render loop
@@ -500,6 +521,8 @@ int ViewerApplication::run() {
                     lightIntensity = lightColor;
                 }
 
+                ImGui::Columns(2, "");
+
                 if (ImGui::Checkbox("Lighting from camera", &lightFromCamera)) {
                     glUniform3f(uLightDirectionLocation, 0, 0, 1);
                 }
@@ -517,10 +540,34 @@ int ViewerApplication::run() {
                         autoIncrement_colors = true;
                     }
                 }
+                ImGui::NextColumn();
                 ImGui::Checkbox("Apply Occlusion", &useOcclusion);
-                ImGui::Checkbox("Apply Normal Map", &useNormalMap);
+                if (ImGui::Checkbox("Apply Normal Map", &pressed_normal)) {
+                    if (useNormalMap) {
+                        useNormalMap = false;
+                        useTBN = false;
+                        pressed_TBN = false;
+                    } else {
+                        useNormalMap = true;
+                    }
+                };
+                if (ImGui::Checkbox("Apply Normal w/ TBN", &pressed_TBN)) {
+                    if (useNormalMap) {
+                        if (useTBN) {
+                            useTBN = false;
+                        } else {
+                            useTBN = true;
+                        }
+                    } else {
+                        useNormalMap = true;
+                        useTBN = true;
+                        pressed_TBN = true;
+                        pressed_normal = true;
+                    };
+                }
+                ImGui::Checkbox("View Normal colorspace", &viewNormal);
+                ImGui::Columns();
             }
-
             if (ImGui::CollapsingHeader("Camera",
                                         ImGuiTreeNodeFlags_DefaultOpen)) {
                 ImGui::Text("eye: %.3f %.3f %.3f", camera.eye().x,

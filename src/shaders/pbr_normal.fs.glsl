@@ -29,6 +29,8 @@ uniform float uOcclusionStrength;
 uniform sampler2D uNormalTexture;
 uniform float uNormalTextureScale;
 uniform int uNormalTextureOnOff;
+uniform int uNormalTBNOnOff;
+uniform int uViewNormalOnOff;
 
 out vec3 fColor;
 
@@ -55,9 +57,13 @@ void main()
   if (uNormalTextureOnOff == 1) {
     // Normal Map
     N = texture(uNormalTexture, vTexCoords).rgb;
-    N = (N * 2.0 - 1.0)*vec3(uNormalTextureScale,uNormalTextureScale,1.0);    
-    N = normalize(TBN * N);
+    N = (N * 2.0 - 1.0)*vec3(uNormalTextureScale,uNormalTextureScale,1.0);
+    if (uNormalTBNOnOff == 1){
+      N = TBN * N;
+    }
+
   }
+  N = normalize(N);
   
   //
   vec3 L = uLightDirection;
@@ -131,18 +137,18 @@ void main()
 
   vec3 color = (material * uLightIntensity * NdotL)+ emissive;
 
-
+  if (uViewNormalOnOff == 1){
+    color = N;
+  }  
+  
   // Occlusion
   if (uOcclusionOnOff == 1) {
-
     vec4 OcclusionFromTexture = (texture2D(uOcclusionTexture, vTexCoords));
     //float occlusion  = (OcclusionFromTexture.r * uOcclusionStrength);
     //color = mix(color, vec3(black), occlusion); 
-        float ao = texture2D(uOcclusionTexture, vTexCoords).r;
+    float ao = texture2D(uOcclusionTexture, vTexCoords).r;
     color = mix(color, color * ao, uOcclusionStrength);
-
   }
 
   fColor = LINEARtoSRGB(color);
-
 }

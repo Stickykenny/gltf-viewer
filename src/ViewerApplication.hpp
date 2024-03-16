@@ -113,7 +113,13 @@ class ViewerApplication {
     std::vector<GLuint> createVertexArrayObjects(const tinygltf::Model &model, const std::vector<GLuint> &bufferObjects, std::vector<VaoRange> &meshIndexToVaoRange);
 
     void computeTangent(const tinygltf::Model &model, const tinygltf::Primitive &primitive, GLuint attribArrayIndex);
+
     std::vector<GLuint> createTextureObjects(const tinygltf::Model &model) const;
 
+    bool nextColumnWrapper() {
+        // Wrapper method used for separating 'First Person' and 'TrackBall' button
+        ImGui::NextColumn();
+        return false;
+    };
     int run();
 };
