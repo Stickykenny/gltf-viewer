@@ -23,7 +23,9 @@ class ViewerApplication {
     const fs::path m_ShadersRootPath;
 
     fs::path m_gltfFilePath;
-    std::string m_vertexShader = "forward.vs.glsl";
+    // std::string m_vertexShader = "forward.vs.glsl";
+    std::string m_vertexShader = "forward_normal.vs.glsl";
+
     // std::string m_fragmentShader = "normals.fs.glsl";
     // std::string m_fragmentShader = "diffuse_directional_light.fs.glsl";
     // std::string m_fragmentShader = "pbr_directional_light.fs.glsl";
@@ -110,6 +112,7 @@ class ViewerApplication {
     };
     std::vector<GLuint> createVertexArrayObjects(const tinygltf::Model &model, const std::vector<GLuint> &bufferObjects, std::vector<VaoRange> &meshIndexToVaoRange);
 
+    void computeTangent(const tinygltf::Model &model, const tinygltf::Primitive &primitive, GLuint attribArrayIndex);
     std::vector<GLuint> createTextureObjects(const tinygltf::Model &model) const;
 
     int run();

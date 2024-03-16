@@ -179,87 +179,87 @@ int ViewerApplication::run() {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, textureObject);
                 glUniform1i(uBaseColorTexture, 0);
-
-                if (uMetallicFactorLocation >= 0) {
-                    glUniform1f(
-                        uMetallicFactorLocation, (float)pbrMetallicRoughness.metallicFactor);
-                }
-                if (uRoughnessFactorLocation >= 0) {
-                    glUniform1f(
-                        uRoughnessFactorLocation, (float)pbrMetallicRoughness.roughnessFactor);
-                }
-                if (uMetallicRoughnessTextureLocation >= 0) {
-                    auto textureObject = whiteTexture;
-                    if (pbrMetallicRoughness.metallicRoughnessTexture.index >= 0) {
-                        const auto &texture =
-                            model.textures[pbrMetallicRoughness.metallicRoughnessTexture.index];
-                        if (texture.source >= 0) {
-                            textureObject = textureObjects[texture.source];
-                        }
+            }
+            if (uMetallicFactorLocation >= 0) {
+                glUniform1f(
+                    uMetallicFactorLocation, (float)pbrMetallicRoughness.metallicFactor);
+            }
+            if (uRoughnessFactorLocation >= 0) {
+                glUniform1f(
+                    uRoughnessFactorLocation, (float)pbrMetallicRoughness.roughnessFactor);
+            }
+            if (uMetallicRoughnessTextureLocation >= 0) {
+                auto textureObject = whiteTexture;
+                if (pbrMetallicRoughness.metallicRoughnessTexture.index >= 0) {
+                    const auto &texture =
+                        model.textures[pbrMetallicRoughness.metallicRoughnessTexture.index];
+                    if (texture.source >= 0) {
+                        textureObject = textureObjects[texture.source];
                     }
-
-                    glActiveTexture(GL_TEXTURE1);
-                    glBindTexture(GL_TEXTURE_2D, textureObject);
-                    glUniform1i(uMetallicRoughnessTextureLocation, 1);
                 }
 
-                if (uEmissiveFactorLocation >= 0) {
-                    glUniform3f(
-                        uEmissiveFactorLocation, (float)material.emissiveFactor[0],
-                        (float)material.emissiveFactor[1],
-                        (float)material.emissiveFactor[2]);
-                }
-                if (uEmissiveTextureLocation >= 0) {
-                    auto textureObject = whiteTexture;
-                    if (material.emissiveTexture.index >= 0) {
-                        const auto &texture =
-                            model.textures[material.emissiveTexture.index];
-                        if (texture.source >= 0) {
-                            textureObject = textureObjects[texture.source];
-                        }
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, textureObject);
+                glUniform1i(uMetallicRoughnessTextureLocation, 1);
+            }
+
+            if (uEmissiveFactorLocation >= 0) {
+                glUniform3f(
+                    uEmissiveFactorLocation, (float)material.emissiveFactor[0],
+                    (float)material.emissiveFactor[1],
+                    (float)material.emissiveFactor[2]);
+            }
+            if (uEmissiveTextureLocation >= 0) {
+                auto textureObject = whiteTexture;
+                if (material.emissiveTexture.index >= 0) {
+                    const auto &texture =
+                        model.textures[material.emissiveTexture.index];
+                    if (texture.source >= 0) {
+                        textureObject = textureObjects[texture.source];
                     }
-
-                    glActiveTexture(GL_TEXTURE2);
-                    glBindTexture(GL_TEXTURE_2D, textureObject);
-                    glUniform1i(uEmissiveTextureLocation, 2);
                 }
 
-                // Occlusion
-                const auto &occlusionTexture = material.occlusionTexture;
-                if (uOcclusionStrengthLocation >= 0) {
-                    glUniform1f(uOcclusionStrengthLocation, (float)material.occlusionTexture.strength);
-                }
-                if (uOcclusionTextureLocation >= 0) {
-                    auto textureObject = whiteTexture;
-                    if (occlusionTexture.index >= 0) {
-                        const auto &texture = model.textures[occlusionTexture.index];
-                        if (texture.source >= 0) {
-                            textureObject = textureObjects[texture.source];
-                        }
-                    }
-                    glActiveTexture(GL_TEXTURE3);
-                    glBindTexture(GL_TEXTURE_2D, textureObject);
-                    glUniform1i(uOcclusionTextureLocation, 3);
-                }
-                // Normal Mapping
-                const auto &normalTexture = material.normalTexture;
-                if (uNormalTextureLocation >= 0) {
-                    auto textureObject = whiteTexture;
-                    if (normalTexture.index >= 0) {
-                        const auto &texture =
-                            model.textures[normalTexture.index];
-                        if (texture.source >= 0) {
-                            textureObject = textureObjects[texture.source];
-                        }
-                    }
+                glActiveTexture(GL_TEXTURE2);
+                glBindTexture(GL_TEXTURE_2D, textureObject);
+                glUniform1i(uEmissiveTextureLocation, 2);
+            }
 
-                    if (uNormalTextureScaleLocation >= 0) {
-                        glUniform1f(uNormalTextureScaleLocation, (float)normalTexture.scale);
+            // Occlusion
+            const auto &occlusionTexture = material.occlusionTexture;
+            if (uOcclusionStrengthLocation >= 0) {
+                glUniform1f(uOcclusionStrengthLocation, (float)material.occlusionTexture.strength);
+            }
+            if (uOcclusionTextureLocation >= 0) {
+                auto textureObject = whiteTexture;
+                if (occlusionTexture.index >= 0) {
+                    const auto &texture = model.textures[occlusionTexture.index];
+                    if (texture.source >= 0) {
+                        textureObject = textureObjects[texture.source];
                     }
-                    glActiveTexture(GL_TEXTURE4);
-                    glBindTexture(GL_TEXTURE_2D, textureObject);
-                    glUniform1i(uNormalTextureLocation, 4);
                 }
+                glActiveTexture(GL_TEXTURE3);
+                glBindTexture(GL_TEXTURE_2D, textureObject);
+                glUniform1i(uOcclusionTextureLocation, 3);
+            }
+            // Normal Mapping
+            const auto &normalTexture = material.normalTexture;
+
+            if (uNormalTextureLocation >= 0) {
+                auto textureObject = whiteTexture;
+                if (normalTexture.index >= 0) {
+                    const auto &texture =
+                        model.textures[normalTexture.index];
+                    if (texture.source >= 0) {
+                        textureObject = textureObjects[texture.source];
+                    }
+                }
+
+                if (uNormalTextureScaleLocation >= 0) {
+                    glUniform1f(uNormalTextureScaleLocation, (float)normalTexture.scale);
+                }
+                glActiveTexture(GL_TEXTURE4);
+                glBindTexture(GL_TEXTURE_2D, textureObject);
+                glUniform1i(uNormalTextureLocation, 4);
             }
         } else {
             // No texture found
@@ -299,11 +299,11 @@ int ViewerApplication::run() {
                 glUniform1i(uOcclusionTextureLocation, 3);
             }
             if (uNormalTextureScaleLocation >= 0) {
-                glUniform1f(uNormalTextureScaleLocation, 0);
+                glUniform1f(uNormalTextureScaleLocation, 1);
             }
             if (uNormalTextureLocation >= 0) {
                 glActiveTexture(GL_TEXTURE4);
-                glBindTexture(GL_TEXTURE_2D, 0);
+                glBindTexture(GL_TEXTURE_2D, 0.5);
                 glUniform1i(uNormalTextureLocation, 4);
             }
         }
@@ -623,13 +623,13 @@ std::vector<GLuint> ViewerApplication::createVertexArrayObjects(const tinygltf::
     GLuint VERTEX_ATTRIB_POSITION_IDX = 0;
     GLuint VERTEX_ATTRIB_NORMAL_IDX = 1;
     GLuint VERTEX_ATTRIB_TEXCOORD0_IDX = 2;
+    GLuint VERTEX_ATTRIB_TANGENT_IDX = 3;
 
-    std::vector<std::string> findthings = {"POSITION",
-                                           "NORMAL",
-                                           "TEXCOORD_0"};
+    std::vector<std::string> findthings = {"POSITION", "NORMAL", "TEXCOORD_0", "TANGENT"};
     std::vector<GLuint> arguments_ltop = {VERTEX_ATTRIB_POSITION_IDX,
                                           VERTEX_ATTRIB_NORMAL_IDX,
-                                          VERTEX_ATTRIB_TEXCOORD0_IDX};
+                                          VERTEX_ATTRIB_TEXCOORD0_IDX,
+                                          VERTEX_ATTRIB_TANGENT_IDX};
 
     for (int meshIdx = 0; meshIdx < model.meshes.size(); ++meshIdx) {
         const int vaoOffset = vertexArrayObjects.size();
@@ -644,7 +644,7 @@ std::vector<GLuint> ViewerApplication::createVertexArrayObjects(const tinygltf::
             glBindVertexArray(vertexArrayObjects[vaoOffset + primitiveIdx]);
             auto primitive = model.meshes[meshIdx].primitives[primitiveIdx];
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < arguments_ltop.size(); i++) {
                 const auto iterator = primitive.attributes.find(findthings[i]);
                 if (iterator != end(primitive.attributes)) {
                     const auto accessorIdx = (*iterator).second;
@@ -661,6 +661,8 @@ std::vector<GLuint> ViewerApplication::createVertexArrayObjects(const tinygltf::
                     glVertexAttribPointer(arguments_ltop[i], accessor.type,
                                           accessor.componentType, GL_FALSE, GLsizei(bufferView.byteStride),
                                           (const GLvoid *)(accessor.byteOffset + bufferView.byteOffset));
+                } else if (i == 3) {  // 3 being VERTEX_ATTRIB_TANGENT_IDX
+                    computeTangent(model, primitive, VERTEX_ATTRIB_TANGENT_IDX);
                 }
             }
             // Index array if defined
@@ -679,6 +681,130 @@ std::vector<GLuint> ViewerApplication::createVertexArrayObjects(const tinygltf::
 
     return vertexArrayObjects;
 }
+
+void ViewerApplication::computeTangent(const tinygltf::Model &model, const tinygltf::Primitive &primitive, GLuint attribArrayIndex) {
+    std::vector<glm::vec3> positions;
+    std::vector<glm::vec2> uvs;
+    GLuint tangentsBuffer;
+    glGenBuffers(1, &tangentsBuffer);
+    std::vector<glm::vec3> tangents;
+
+    if (model.defaultScene >= 0) {
+        // POSITION STRUCTURAL INFORMATION RETRIEVAL
+        const auto positionAttrIdxIt = primitive.attributes.find("POSITION");
+        if (positionAttrIdxIt == end(primitive.attributes)) {
+            return;
+        }
+        const auto &positionAccessor = model.accessors[(*positionAttrIdxIt).second];
+        if (positionAccessor.type != 3) {
+            std::cerr << "Position accessor with type != VEC3, skipping" << std::endl;
+            return;
+        }
+        const auto &positionBufferView = model.bufferViews[positionAccessor.bufferView];
+        const auto byteOffset = positionAccessor.byteOffset + positionBufferView.byteOffset;
+        const auto &positionBuffer = model.buffers[positionBufferView.buffer];
+        const auto positionByteStride = positionBufferView.byteStride ? positionBufferView.byteStride : 3 * sizeof(float);
+
+        // TEXTURE COORDINATES STRUCTURAL INFORMATION RETRIEVAL
+        const auto textureAttrIdxIt = primitive.attributes.find("TEXCOORD_0");
+        if (textureAttrIdxIt == end(primitive.attributes)) {
+            return;
+        }
+        const auto &textureAccessor = model.accessors[(*textureAttrIdxIt).second];
+        if (textureAccessor.type != 2) {
+            std::cerr << " Texture with type != VEC2, skipping" << std::endl;
+            return;
+        }
+        const auto &textureBufferView = model.bufferViews[textureAccessor.bufferView];
+        const auto textureByteOffset = textureAccessor.byteOffset + textureBufferView.byteOffset;
+        const auto &textureBuffer = model.buffers[textureBufferView.buffer];
+        const auto textureByteStride = textureBufferView.byteStride ? textureBufferView.byteStride : 2 * sizeof(float);
+
+        if (primitive.indices >= 0) {
+            const auto &indexAccessor = model.accessors[primitive.indices];
+            const auto &indexBufferView = model.bufferViews[indexAccessor.bufferView];
+            const auto indexByteOffset = indexAccessor.byteOffset + indexBufferView.byteOffset;
+            const auto &indexBuffer = model.buffers[indexBufferView.buffer];
+            auto indexByteStride = indexBufferView.byteStride;
+
+            switch (indexAccessor.componentType) {
+                default:
+                    std::cerr << "Primitive index accessor with bad componentType "
+                              << indexAccessor.componentType << ", skipping it." << std::endl;
+                    return;
+                case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+                    indexByteStride = indexByteStride ? indexByteStride : sizeof(uint8_t);
+                    break;
+                case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+                    indexByteStride = indexByteStride ? indexByteStride : sizeof(uint16_t);
+                    break;
+                case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+                    indexByteStride = indexByteStride ? indexByteStride : sizeof(uint32_t);
+                    break;
+            }
+
+            for (size_t i = 0; i < indexAccessor.count; ++i) {
+                uint32_t index = 0;
+                switch (indexAccessor.componentType) {
+                    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+                        index = *((const uint8_t *)&indexBuffer.data[indexByteOffset + indexByteStride * i]);
+                        break;
+                    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+                        index = *((const uint16_t *)&indexBuffer.data[indexByteOffset + indexByteStride * i]);
+                        break;
+                    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+                        index = *((const uint32_t *)&indexBuffer.data[indexByteOffset + indexByteStride * i]);
+                        break;
+                }
+                const auto &localPosition = *((const glm::vec3 *)&positionBuffer.data[byteOffset + positionByteStride * index]);
+                positions.emplace_back(localPosition);
+                const auto &textureCoord = *((const glm::vec2 *)&textureBuffer.data[textureByteOffset + textureByteStride * index]);
+                uvs.emplace_back(textureCoord);
+            }
+        } else {
+            for (size_t i = 0; i < positionAccessor.count; ++i) {
+                const auto &localPosition = *((const glm::vec3 *)&positionBuffer.data[byteOffset + positionByteStride * i]);
+                positions.emplace_back(localPosition);
+                const auto &textureCoord = *((const glm::vec2 *)&textureBuffer.data[textureByteOffset + textureByteStride * i]);
+                uvs.emplace_back(textureCoord);
+            }
+        }
+
+        for (int i = 0; i < positions.size(); i += 3) {
+            glm::vec3 tangent;
+            // positions
+            glm::vec3 pos1 = positions[i];
+            glm::vec3 pos2 = positions[i + 1];
+            glm::vec3 pos3 = positions[i + 2];
+            // texture coordinates
+            glm::vec2 uv1 = uvs[i];
+            glm::vec2 uv2 = uvs[i + 1];
+            glm::vec2 uv3 = uvs[i + 2];
+
+            // normal vector
+            glm::vec3 nm(0.0, 0.0, 1.0);
+
+            glm::vec3 edge1 = pos2 - pos1;
+            glm::vec3 edge2 = pos3 - pos1;
+            glm::vec2 deltaUV1 = uv2 - uv1;
+            glm::vec2 deltaUV2 = uv3 - uv1;
+
+            float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+            tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+            tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+            tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+            /*bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+            bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+            bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);*/
+            tangents.emplace_back(tangent);
+        }
+    }
+    glEnableVertexAttribArray(attribArrayIndex);
+    glBindBuffer(GL_ARRAY_BUFFER, tangentsBuffer);
+    glBufferData(GL_ARRAY_BUFFER, tangents.size() * sizeof(glm::vec3), tangents.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(attribArrayIndex, 3, GL_FLOAT, GL_TRUE, sizeof(glm::vec3), NULL);
+};
 
 ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width,
                                      uint32_t height, const fs::path &gltfFile,

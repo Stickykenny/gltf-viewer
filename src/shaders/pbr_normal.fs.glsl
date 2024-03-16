@@ -3,6 +3,7 @@
 in vec3 vViewSpacePosition;
 in vec3 vViewSpaceNormal;
 in vec2 vTexCoords;
+in mat3 TBN;
 
 uniform vec3 uLightDirection;
 uniform vec3 uLightIntensity;
@@ -53,14 +54,14 @@ void main()
   vec3 N = normalize(vViewSpaceNormal);
   if (uNormalTextureOnOff == 1) {
     // Normal Map
-    N = texture(uNormalTexture, vTexCoords).rgb ;
-    N = normalize((N * 2.0 - 1.0)*uNormalTextureScale);
+    N = texture(uNormalTexture, vTexCoords).rgb;
+    N = (N * 2.0 - 1.0)*vec3(uNormalTextureScale,uNormalTextureScale,1.0);    
+    N = normalize(TBN * N);
   }
   
   //
   vec3 L = uLightDirection;
-  vec4 baseColorFromTexture =
-      SRGBtoLINEAR(texture(uBaseColorTexture, vTexCoords));
+  vec4 baseColorFromTexture = SRGBtoLINEAR(texture(uBaseColorTexture, vTexCoords));
   float NdotL = clamp(dot(N, L), 0., 1.);
   vec4 baseColor = uBaseColorFactor * baseColorFromTexture;
 
@@ -68,7 +69,6 @@ void main()
   vec3 diffuse = baseColor.rgb * M_1_PI;
 
   fColor = LINEARtoSRGB(diffuse * uLightIntensity * NdotL);
-
   // METALLIC addon
   // See here : https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#implementation
 
