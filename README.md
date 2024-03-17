@@ -1,6 +1,7 @@
 # glTF Viewer Tutorial Code
 
-This is the code repository for https://gltf-viewer-tutorial.gitlab.io/.
+This is the code repository for https://gltf-viewer-tutorial.gitlab.io/.  
+Please refer to the [Rapport-gltf-viewer.pdf]
 
 # HOW TO
 
@@ -10,16 +11,18 @@ All commands to use from the project's root
 
 ```bash
 source .vscode/bash-init.sh # once per session
+cmake_prepare # To setup the project
 cmake_build
+cmake_install
+dist/gltf-viewer viewer gltf-sample-models/2.0/[MODEL_NAME]/glTF/[MODEL_NAME].gltf
+
+# Or after cmake_prepare directly
 view_sponza or view_helmet
 ```
 
-Can also use
-`cmake ../ ; make`
-
 ### My git setup
 
-commit and push to gitlab via VSCODE
+Commit and push to gitlab via VSCODE
 
 then
 `git push togithub` to push to gihub
