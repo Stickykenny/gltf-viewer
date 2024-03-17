@@ -32,6 +32,9 @@ uniform int uNormalTextureOnOff;
 uniform int uNormalTBNOnOff;
 uniform int uViewNormalOnOff;
 
+// Others
+uniform int uApplyMonochromaticOnOff;
+
 out vec3 fColor;
 
 // Constants
@@ -57,14 +60,15 @@ void main()
   if (uNormalTextureOnOff == 1) {
     // Normal Map
     N = texture(uNormalTexture, vTexCoords).rgb;
-    N = (N * 2.0 - 1.0)*vec3(uNormalTextureScale,uNormalTextureScale,1.0);
+    N = (N * 2.0 - 1.0);//*vec3(uNormalTextureScale,uNormalTextureScale,1.0);
     if (uNormalTBNOnOff == 1){
       N = TBN * N;
     }
 
   }
+
   N = normalize(N);
-  
+
   //
   vec3 L = uLightDirection;
   vec4 baseColorFromTexture = SRGBtoLINEAR(texture(uBaseColorTexture, vTexCoords));
@@ -148,6 +152,18 @@ void main()
     //color = mix(color, vec3(black), occlusion); 
     float ao = texture2D(uOcclusionTexture, vTexCoords).r;
     color = mix(color, color * ao, uOcclusionStrength);
+  }
+
+  if (uApplyMonochromaticOnOff == 1) {
+    color = normalize(color);
+    float gray = (color.r + color.g + color.b)/3;
+    if (gray > 0.25) {
+      color = vec3(1);
+    }
+    else {
+      color = vec3(0.05);
+    }
+     color = uLightIntensity * color;
   }
 
   fColor = LINEARtoSRGB(color);

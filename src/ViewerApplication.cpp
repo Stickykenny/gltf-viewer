@@ -85,14 +85,17 @@ int ViewerApplication::run() {
 
     const auto uViewNormalOnOffLocation =
         glGetUniformLocation(glslProgram.glId(), "uViewNormalOnOff");
+    const auto uApplyMonochromaticOnOffLocation =
+        glGetUniformLocation(glslProgram.glId(), "uApplyMonochromaticOnOff");
 
     bool useOcclusion = true;
     bool useNormalMap = true;
     bool useTBN = true;
     bool viewNormal = false;
+    bool useMonochromatic = false;
     glm::vec3 lightDirection(1);
     glm::vec3 lightIntensity({1.,1.,1.});
-    static float lightIntensityFactor = 5.;
+    static float lightIntensityFactor = 1.;
     bool lightFromCamera = false;
 
     // Build projection matrix
@@ -186,8 +189,8 @@ int ViewerApplication::run() {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, textureObject);
                 glUniform1i(uBaseColorTexture, 0);
-            }
-            if (uMetallicFactorLocation >= 0) {
+}
+                if (uMetallicFactorLocation >= 0) {
                 glUniform1f(
                     uMetallicFactorLocation, (float)pbrMetallicRoughness.metallicFactor);
             }
@@ -268,7 +271,7 @@ int ViewerApplication::run() {
                 glBindTexture(GL_TEXTURE_2D, textureObject);
                 glUniform1i(uNormalTextureLocation, 4);
             }
-        } else {
+                    } else {
             // No texture found
             if (uBaseColorFactorLocation >= 0) {
                 glUniform4f(uBaseColorFactorLocation, 1, 1, 1, 1);
@@ -306,11 +309,11 @@ int ViewerApplication::run() {
                 glUniform1i(uOcclusionTextureLocation, 3);
             }
             if (uNormalTextureScaleLocation >= 0) {
-                glUniform1f(uNormalTextureScaleLocation, 1);
+                glUniform1f(uNormalTextureScaleLocation, 0.);
             }
             if (uNormalTextureLocation >= 0) {
                 glActiveTexture(GL_TEXTURE4);
-                glBindTexture(GL_TEXTURE_2D, 0.5);
+                glBindTexture(GL_TEXTURE_2D, 0);
                 glUniform1i(uNormalTextureLocation, 4);
             }
         }
@@ -351,6 +354,10 @@ int ViewerApplication::run() {
         if (uViewNormalOnOffLocation >= 0) {
             glUniform1i(uViewNormalOnOffLocation, viewNormal);
         }
+        if (uApplyMonochromaticOnOffLocation >= 0) {
+            glUniform1i(uApplyMonochromaticOnOffLocation, useMonochromatic);
+        }
+
         // The recursive function that should draw a node
         // We use a std::function because a simple lambda cannot be recursive
         const std::function<void(int, const glm::mat4 &)> drawNode =
@@ -540,6 +547,7 @@ int ViewerApplication::run() {
                         autoIncrement_colors = true;
                     }
                 }
+                ImGui::Checkbox("Render in monochromatic", &useMonochromatic);
                 ImGui::NextColumn();
                 ImGui::Checkbox("Apply Occlusion", &useOcclusion);
                 if (ImGui::Checkbox("Apply Normal Map", &pressed_normal)) {
@@ -609,8 +617,6 @@ int ViewerApplication::run() {
 
         m_GLFWHandle.swapBuffers();  // Swap front and back buffers
     }
-
-    // TODO clean up allocated GL data
 
     return 0;
 }
@@ -702,9 +708,6 @@ std::vector<GLuint> ViewerApplication::createVertexArrayObjects(const tinygltf::
                     const auto bufferObject = bufferObjects[bufferIdx];
                     glEnableVertexAttribArray(arguments_ltop[i]);
                     glBindBuffer(GL_ARRAY_BUFFER, bufferObject);
-
-                    const auto byteOffset = accessor.byteOffset + bufferView.byteOffset;
-
                     glVertexAttribPointer(arguments_ltop[i], accessor.type,
                                           accessor.componentType, GL_FALSE, GLsizei(bufferView.byteStride),
                                           (const GLvoid *)(accessor.byteOffset + bufferView.byteOffset));
@@ -827,9 +830,6 @@ void ViewerApplication::computeTangent(const tinygltf::Model &model, const tinyg
             glm::vec2 uv1 = uvs[i];
             glm::vec2 uv2 = uvs[i + 1];
             glm::vec2 uv3 = uvs[i + 2];
-
-            // normal vector
-            glm::vec3 nm(0.0, 0.0, 1.0);
 
             glm::vec3 edge1 = pos2 - pos1;
             glm::vec3 edge2 = pos3 - pos1;

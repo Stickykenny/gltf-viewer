@@ -139,10 +139,10 @@ bool TrackballCameraController::update(float elapsedTime) {
     // Dolly in/out with ctrl+middle mouse pressed
     const auto hasMoved = 0.f;
     if (m_MiddleButtonPressed) {
-        std::cout << "MIDDLE pressed";
+        //std::cout << "MIDDLE pressed";
 
         if (glfwGetKey(m_pWindow, GLFW_KEY_LEFT_SHIFT)) {
-            std::cout << "+SHIFT" << std::endl;
+            //std::cout << "+SHIFT" << std::endl;
             // Truck
             // Suit l'axe horizontal de la camera
 
@@ -158,7 +158,7 @@ bool TrackballCameraController::update(float elapsedTime) {
         } else if (glfwGetKey(m_pWindow, GLFW_KEY_LEFT_CONTROL)) {
             std::cout << "!!!! I'm using LEFT_ALT instead of LEFT_CONTROL for trackball due to laptop constraint" << std::endl;
         } else if (glfwGetKey(m_pWindow, GLFW_KEY_LEFT_ALT)) {
-            std::cout << "+ALT" << std::endl;
+            //std::cout << "+ALT" << std::endl;
             // Dolly - Zoom
             // Suit l'axe z de la camera // profondeur-depth
 
@@ -169,8 +169,6 @@ bool TrackballCameraController::update(float elapsedTime) {
 
             auto viewVector = m_camera.center() - m_camera.eye();
 
-            // Cool looking fun
-            // viewVector.x = viewVector.x > 1 ? viewVector.x : 1;
             const auto translation_vector = viewVector * zoomOffset;
             const auto newEye = m_camera.eye() + translation_vector;
 
@@ -212,7 +210,6 @@ bool TrackballCameraController::update(float elapsedTime) {
 
             m_camera = Camera(newEye, m_camera.center(), m_worldUpAxis);
 
-            std::cout << std::endl;
             if (hasMoved) {
                 return true;
             }
